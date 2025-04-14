@@ -626,11 +626,13 @@ print(f"Transaction successful with hash: {tx_hash}")
 print(f"UIDs of the attestations: {uids}")
 """
 
-"""
-# Example of submitting one offchain attestation
+
+# Example of submitting one offchain attestation (fails sometimes on EAS server side...)
 response = oli.create_offchain_label(address, chain, tags)
-print(json.dumps(response, indent=2))
-"""
+if response.status_code == 200:
+    print(response.json())
+else:
+    print(f"Error: {response.status_code} - {response.text}")
 
 """
 # Example of revoking one attestation
