@@ -1,0 +1,271 @@
+from web3 import Web3
+
+class OnchainAttestations:
+    def __init__(self, oli_client):
+        """
+        Initialize OnchainAttestations with an OLI client.
+        
+        Args:
+            oli_client: The OLI client instance
+        """
+        self.oli = oli_client
+    
+    def create_onchain_label(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit=0):
+        """
+        Create an onchain OLI label attestation for a contract.
+        
+        Args:
+            address (str): The contract address to label
+            chain_id (str): Chain ID in CAIP-2 format where the address/contract resides
+            tags (dict): OLI compliant tags as a dict  information (name, version, etc.)
+            ref_uid (str): Reference UID
+            gas_limit (int): Gas limit for the transaction. If set to 0, the function will estimate the gas limit.
+            
+        Returns:
+            str: Transaction hash
+            str: UID of the attestation
+        """
+        # Check all necessary input parameters
+        self.oli.validator.check_label_correctness(address, chain_id, tags, ref_uid)
+
+        # Encode the label data
+        data = self.oli.encoder.encode_label_data(chain_id, tags)
+        
+        # Create the attestation
+        function = self.oli.eas.functions.attest({
+            'schema': self.oli.w3.to_bytes(hexstr=self.oli.oli_label_pool_schema),
+            'data': {
+                'recipient': self.oli.w3.to_checksum_address(address),
+                'expirationTime': 0,
+                'revocable': True,
+                'refUID': self.oli.w3.to_bytes(hexstr=ref_uid),
+                'data': self.oli.w3.to_bytes(hexstr=data),
+                'value': 0
+            }
+        })
+
+        # Define the transaction parameters
+        tx_params = {
+            'chainId': self.oli.rpc_chain_number,
+            'gasPrice': self.oli.w3.eth.gas_price,
+            'nonce': self.oli.w3.eth.get_transaction_count(self.oli.address),
+        }
+
+        # Estimate gas if no limit provided
+        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        
+        # Build the transaction to attest one label
+        transaction = function.build_transaction(tx_params)
+
+        # Sign the transaction with the private key
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        
+        # Send the transaction
+        try:
+            txn_hash = self.oli.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+        except Exception as e:
+            raise Exception(f"Failed to send transaction to mempool: {e}")
+
+        # Wait for the transaction receipt
+        txn_receipt = self.oli.w3.eth.wait_for_transaction_receipt(txn_hash)
+        
+        # Check if the transaction was successful
+        if txn_receipt.status == 1:
+            return f"0x{txn_hash.hex()}", f"0x{txn_receipt.logs[0].data.hex()}"
+        else:
+            raise Exception(f"Transaction failed onchain: {txn_receipt}")
+    
+    def create_multi_onchain_labels(self, labels, gas_limit=0):
+        """
+        Batch submit OLI labels in one transaction.
+        
+        Args:
+            labels (list): List of labels, containing dictionaries with 'address', 'tags', and 'chain_id' (, optional 'ref_uid')
+                address (str): The contract address to label
+                chain_id (str): Chain ID in CAIP-2 format where the address/contract resides
+                tags (dict): OLI compliant tags as a dict  information (name, version, etc.)
+                ref_uid (str): Reference UID
+            gas_limit (int): Gas limit for one transaction to submit all labels passed, make sure to set it high enough for multiple attestations! If set to 0, the function will estimate the gas limit.
+            
+        Returns:
+            str: Transaction hash
+            list: List of UID of the attestation
+        """
+        # Prepare the list of "data" requests
+        full_data = []
+        for label in labels:
+            # check if address, chain_id & tags are provided
+            if 'chain_id' not in label:
+                raise ValueError("chain_id must be provided for each label in CAIP-2 format (e.g., Base -> 'eip155:8453')")
+            elif 'address' not in label:
+                raise ValueError("An address must be provided for each label")
+            elif 'tags' not in label:
+                raise ValueError("tags dictionary must be provided for each label")
+            
+            # fix simple formatting errors in tags
+            label['tags'] = self.oli.validator.fix_simple_tags_formatting(label['tags'])
+
+            # run checks on each label
+            self.oli.validator.check_label_correctness(label['address'], label['chain_id'], label['tags'])
+
+            # check if ref_uid is provided
+            if 'ref_uid' not in label:
+                label['ref_uid'] = "0x0000000000000000000000000000000000000000000000000000000000000000"
+            else:
+                self.oli.validator.checks_ref_uid(label['ref_uid'])
+
+            # ABI encode data for each attestation
+            data = self.oli.encoder.encode_label_data(label['chain_id'], label['tags'])
+            full_data.append({
+                'recipient': self.oli.w3.to_checksum_address(label['address']),
+                'expirationTime': 0,
+                'revocable': True,
+                'refUID': self.oli.w3.to_bytes(hexstr=label['ref_uid']),
+                'data': self.oli.w3.to_bytes(hexstr=data),
+                'value': 0
+            })
+
+        # Create the multi-attestation request
+        multi_requests = [{
+            'schema': self.oli.w3.to_bytes(hexstr=self.oli.oli_label_pool_schema),
+            'data': full_data
+        }]
+
+        # Create the function call
+        function = self.oli.eas.functions.multiAttest(multi_requests)
+
+        # Define the transaction parameters
+        tx_params = {
+            'chainId': self.oli.rpc_chain_number,
+            'gasPrice': self.oli.w3.eth.gas_price,
+            'nonce': self.oli.w3.eth.get_transaction_count(self.oli.address),
+        }
+
+        # Estimate gas if no limit provided
+        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+
+        # Build the transaction to revoke an attestation
+        transaction = function.build_transaction(tx_params)
+
+        # Sign the transaction with the private key
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        
+        # Send the transaction
+        try:
+            txn_hash = self.oli.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+        except Exception as e:
+            raise Exception(f"Failed to send transaction to mempool: {e}")
+        
+        # Wait for the transaction receipt
+        txn_receipt = self.oli.w3.eth.wait_for_transaction_receipt(txn_hash)
+
+        # Check if the transaction was successful
+        if txn_receipt.status != 1:
+            raise Exception(f"Transaction failed onchain: {txn_receipt}")
+
+        # log the UIDs of the attestations in a list
+        uids = ['0x' + log.data.hex() for log in txn_receipt.logs]
+
+        return f"0x{txn_hash.hex()}", uids
+        
+    def revoke_attestation(self, uid_hex, gas_limit=200000):
+        """
+        Revoke an onchain attestation using its UID.
+        
+        Args:
+            uid_hex (str): UID of the attestation to revoke (in hex format)
+            gas_limit (int): Gas limit for the transaction. If not set, defaults to 200000. Gas estimation is not possible for revoke transactions.
+            
+        Returns:
+            str: Transaction hash
+        """
+        function = self.oli.eas.functions.revoke({
+            'schema': self.oli.w3.to_bytes(hexstr=self.oli.oli_label_pool_schema),
+            'data': {
+                'uid': self.oli.w3.to_bytes(hexstr=uid_hex),
+                'value': 0
+            }
+        })
+
+        # Define the transaction parameters
+        tx_params = {
+            'chainId': self.oli.rpc_chain_number,
+            'gasPrice': self.oli.w3.eth.gas_price,
+            'nonce': self.oli.w3.eth.get_transaction_count(self.oli.address),
+        }
+
+        # Estimate gas if no limit provided
+        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+
+        # Build the transaction to revoke an attestation
+        transaction = function.build_transaction(tx_params)
+
+        # Sign the transaction
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+
+        # Send the transaction
+        try:
+            txn_hash = self.oli.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+        except Exception as e:
+            raise Exception(f"Failed to send revoke transaction to mempool: {e}")
+
+        # Get the transaction receipt
+        txn_receipt = self.oli.w3.eth.wait_for_transaction_receipt(txn_hash)
+        
+        # Check if the transaction was successful
+        if txn_receipt.status == 1:
+            return f"0x{txn_hash.hex()}"
+        else:
+            raise Exception(f"Transaction failed: {txn_receipt}")
+    
+    def multi_revoke_attestations(self, uids, gas_limit=10000000):
+        """
+        Revoke multiple onchain attestations in a single transaction.
+        
+        Args:
+            uids (list): List of UIDs to revoke (in hex format)
+            gas_limit (int): Gas limit for the transaction. If not set, defaults to 10000000. Gas estimation is not possible for revoke transactions.
+            
+        Returns:
+            str: Transaction hash
+            int: Number of attestations revoked
+        """
+        revocation_data = []
+        for uid in uids:
+            revocation_data.append({
+                'uid': self.oli.w3.to_bytes(hexstr=uid),
+                'value': 0
+            })
+        multi_requests = [{
+            'schema': self.oli.w3.to_bytes(hexstr=self.oli.oli_label_pool_schema),
+            'data': revocation_data
+        }]
+        function = self.oli.eas.functions.multiRevoke(multi_requests)
+
+        # Define the transaction parameters
+        tx_params = {
+            'chainId': self.oli.rpc_chain_number,
+            'gasPrice': self.oli.w3.eth.gas_price,
+            'nonce': self.oli.w3.eth.get_transaction_count(self.oli.address),
+        }
+
+        # Estimate gas if no limit provided
+        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+
+        # Build the transaction
+        transaction = function.build_transaction(tx_params)
+
+        # Sign the transaction
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+
+        # Send the transaction
+        txn_hash = self.oli.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+
+        # Get the transaction receipt
+        txn_receipt = self.oli.w3.eth.wait_for_transaction_receipt(txn_hash)
+        
+        # Check if the transaction was successful
+        if txn_receipt.status == 1:
+            return f"0x{txn_hash.hex()}", len(uids)
+        else:
+            raise Exception(f"Transaction failed: {txn_receipt}")
