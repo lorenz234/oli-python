@@ -421,7 +421,8 @@ class OLI:
             'solana:',  # Solana
             'tron:',    # TRON
             'stellar:', # Stellar
-            'bip122:'   # Bitcoin
+            'bip122:',  # Bitcoin
+            'SN_'       # Starknet
         ]
         
         # Check if the chain_id starts with any of the allowed prefixes
