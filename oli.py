@@ -403,8 +403,6 @@ class OLI:
         self.checks_chain_id(chain_id)
         self.checks_tags(tags)
         self.checks_ref_uid(ref_uid)
-        # advanced checks
-        self.checks_eip155_any(chain_id, tags)
         return True
         
     def checks_chain_id(self, chain_id:str) -> bool:
@@ -432,7 +430,10 @@ class OLI:
                 # For eip155, further validate that the rest is a number or 'any'
                 if prefix == 'eip155:':
                     rest = chain_id[len(prefix):]
-                    if rest == 'any' or rest.isdigit():
+                    if rest.isdigit():
+                        return True
+                    elif rest == 'any':
+                        print("Please ensure the label is accurate and consistent across all EVM chains before setting chain_id = 'eip155:any'.")
                         return True
                     else:
                         print(f"Invalid eip155 chain_id format: {chain_id}")
@@ -537,25 +538,6 @@ class OLI:
         else:
             print(ref_uid)
             raise ValueError("Ref_uid must be a valid UID in hex format, leave empty if not used")
-
-    def checks_eip155_any(self, chain_id:str, tags:dict) -> bool:
-        """
-        If the chain_id is 'eip155:any' the tag_id 'is_eoa' = True has to be applied.
-        
-        Args:
-            chain_id (str): chain_id
-            tags (dict): tags
-            
-        Returns:
-            bool: True if correct, False otherwise
-        """
-        if chain_id == 'eip155:any':
-            if 'is_eoa' not in tags:
-                raise ValueError("chain_id can only be set to 'eip155:any' if the address is an EOA, make sure to add the tag_id 'is_eoa' and set to True!")
-            elif tags['is_eoa'] != True:
-                raise ValueError("chain_id can only be set to 'eip155:any' if the address is an EOA, make sure to set the tag_id 'is_eoa' to True!")
-        return True
-
 
     ### functions the user should call to create attestations
     
