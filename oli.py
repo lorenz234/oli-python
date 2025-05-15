@@ -948,8 +948,49 @@ class OLI:
         else:
             raise Exception(f"GraphQL query failed with status code {response.status_code}: {response.text}")
     
-    # function to get raw data labels (from gtp query)
-    # function to get decoded data labels (from gtp query)
+    def get_full_raw_export_parquet(self, file_path="raw_labels.parquet"):
+        """
+        Get the full raw export of all attestations in Parquet format.
+        
+        Args:
+            file_path (str): Path where the file will be saved. Defaults to "raw_labels.parquet".
+            
+        Returns:
+            str: Path to the downloaded Parquet file
+        """
+        url = "https://api.growthepie.xyz/v1/oli/labels_raw.parquet"
+        
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            print(f"Downloaded and saved: {file_path}")
+            return file_path
+        else:
+            print(f"Failed to download {url}. Status code: {response.status_code}")
+            return None
+
+    def get_full_decoded_export_parquet(self, file_path="decoded_labels.parquet"):
+        """
+        Get the full decoded export of all attestations in Parquet format.
+        
+        Args:
+            file_path (str): Path where the file will be saved. Defaults to "decoded_labels.parquet".
+            
+        Returns:
+            str: Path to the downloaded Parquet file
+        """
+        url = "https://api.growthepie.xyz/v1/oli/labels_decoded.parquet"
+        
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            print(f"Downloaded and saved: {file_path}")
+            return file_path
+        else:
+            print(f"Failed to download {url}. Status code: {response.status_code}")
+            return None
 
 
 """
