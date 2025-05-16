@@ -1,5 +1,3 @@
-from web3 import Web3
-
 class OnchainAttestations:
     def __init__(self, oli_client):
         """
@@ -29,7 +27,7 @@ class OnchainAttestations:
         self.oli.validator.check_label_correctness(address, chain_id, tags, ref_uid)
 
         # Encode the label data
-        data = self.oli.encoder.encode_label_data(chain_id, tags)
+        data = self.oli.utils_other.encode_label_data(chain_id, tags)
         
         # Create the attestation
         function = self.oli.eas.functions.attest({
@@ -52,7 +50,7 @@ class OnchainAttestations:
         }
 
         # Estimate gas if no limit provided
-        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        tx_params = self.oli.utils_other.estimate_gas_limit(function, tx_params, gas_limit)
         
         # Build the transaction to attest one label
         transaction = function.build_transaction(tx_params)
@@ -115,7 +113,7 @@ class OnchainAttestations:
                 self.oli.validator.checks_ref_uid(label['ref_uid'])
 
             # ABI encode data for each attestation
-            data = self.oli.encoder.encode_label_data(label['chain_id'], label['tags'])
+            data = self.oli.utils_other.encode_label_data(label['chain_id'], label['tags'])
             full_data.append({
                 'recipient': self.oli.w3.to_checksum_address(label['address']),
                 'expirationTime': 0,
@@ -142,7 +140,7 @@ class OnchainAttestations:
         }
 
         # Estimate gas if no limit provided
-        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        tx_params = self.oli.utils_other.estimate_gas_limit(function, tx_params, gas_limit)
 
         # Build the transaction to revoke an attestation
         transaction = function.build_transaction(tx_params)
@@ -195,7 +193,7 @@ class OnchainAttestations:
         }
 
         # Estimate gas if no limit provided
-        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        tx_params = self.oli.utils_other.estimate_gas_limit(function, tx_params, gas_limit)
 
         # Build the transaction to revoke an attestation
         transaction = function.build_transaction(tx_params)
@@ -250,7 +248,7 @@ class OnchainAttestations:
         }
 
         # Estimate gas if no limit provided
-        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        tx_params = self.oli.utils_other.estimate_gas_limit(function, tx_params, gas_limit)
 
         # Build the transaction
         transaction = function.build_transaction(tx_params)

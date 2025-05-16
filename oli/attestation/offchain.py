@@ -1,5 +1,6 @@
 import time
 import requests
+import secrets
 
 class OffchainAttestations:
     def __init__(self, oli_client):
@@ -29,10 +30,10 @@ class OffchainAttestations:
         self.oli.validator.check_label_correctness(address, chain_id, tags, ref_uid)
         
         # Encode the label data
-        data = self.oli.encoder.encode_label_data(chain_id, tags)
+        data = self.oli.utils_other.encode_label_data(chain_id, tags)
         
         # Build the attestation
-        attestation = self.oli.attestation_base.build_offchain_attestation(
+        attestation = self.build_offchain_attestation(
             recipient=address, 
             schema=self.oli.oli_label_pool_schema, 
             data=data, 
@@ -83,6 +84,100 @@ class OffchainAttestations:
         response = requests.post(self.oli.eas_api_url, json=payload, headers=headers)
         return response
     
+    def build_offchain_attestation(self, recipient, schema, data, ref_uid, revocable=True, expiration_time=0):
+        """
+        Build an offchain attestation with the given parameters.
+        
+        Args:
+            recipient (str): Ethereum address of the contract to be labeled
+            schema (str): Schema hash
+            data (str): Hex-encoded data
+            ref_uid (str): Reference UID
+            revocable (bool): Whether the attestation is revocable
+            expiration_time (int): Expiration time in seconds since epoch
+            
+        Returns:
+            dict: The signed attestation and UID
+        """
+        # Create a random salt
+        salt = f"0x{secrets.token_hex(32)}"
+        
+        # Current time in seconds
+        current_time = int(time.time())
+        
+        # Typed data for the attestation
+        typed_data = {
+            "version": 2,
+            "recipient": recipient,
+            "time": current_time,
+            "revocable": revocable,
+            "schema": schema,
+            "refUID": ref_uid,
+            "data": data,
+            "expirationTime": expiration_time,
+            "salt": salt,
+        }
+        
+        # EIP-712 typed data format
+        types = {
+            "domain": {
+                "name": "EAS Attestation",
+                "version": "1.2.0",
+                "chainId": self.oli.rpc_chain_number,
+                "verifyingContract": self.oli.eas_address
+            },
+            "primaryType": "Attest",
+            "message": typed_data,
+            "types": {
+                "Attest": [
+                    {"name": "version", "type": "uint16"},
+                    {"name": "schema", "type": "bytes32"},
+                    {"name": "recipient", "type": "address"},
+                    {"name": "time", "type": "uint64"},
+                    {"name": "expirationTime", "type": "uint64"},
+                    {"name": "revocable", "type": "bool"},
+                    {"name": "refUID", "type": "bytes32"},
+                    {"name": "data", "type": "bytes"},
+                    {"name": "salt", "type": "bytes32"}
+                ]
+            }
+        }
+
+        # Sign the message using the account
+        signed_message = self.oli.account.sign_typed_data(
+            domain_data=types["domain"],
+            message_types=types["types"],
+            message_data=typed_data
+        )
+        
+        # Calculate the UID
+        attester = '0x0000000000000000000000000000000000000000'  # for offchain UID calculation
+        uid = self.calculate_attestation_uid_v2(
+            schema, recipient, attester, current_time, data, 
+            expiration_time, revocable, ref_uid, salt=salt
+        )
+        uid_hex = '0x' + uid.hex()
+        
+        # Package the result
+        result = {
+            "sig": {
+                "domain": types["domain"],
+                "primaryType": types["primaryType"],
+                "types": types["types"],
+                "message": typed_data,
+                "uid": uid_hex,
+                "version": 2,
+                "signature": {
+                    "r": hex(signed_message.r),
+                    "s": hex(signed_message.s),
+                    "v": signed_message.v
+                }
+            },
+            "signer": self.oli.address
+        }
+        
+        return result
+    
     def revoke_attestation(self, uid_hex, gas_limit=200000):
         """
         Revoke an offchain attestation using its UID.
@@ -104,7 +199,7 @@ class OffchainAttestations:
         }
 
         # Estimate gas if no limit provided
-        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        tx_params = self.oli.utils_other.estimate_gas_limit(function, tx_params, gas_limit)
 
         # Build the transaction to revoke an attestation
         transaction = function.build_transaction(tx_params)
@@ -152,7 +247,7 @@ class OffchainAttestations:
         }
 
         # Estimate gas if no limit provided
-        tx_params = self.oli.attestation_base.estimate_gas_limit(function, tx_params, gas_limit)
+        tx_params = self.oli.utils_other.estimate_gas_limit(function, tx_params, gas_limit)
 
         # Build the transaction
         transaction = function.build_transaction(tx_params)

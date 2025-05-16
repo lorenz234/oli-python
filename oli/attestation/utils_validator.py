@@ -1,4 +1,4 @@
-class DataValidator:
+class UtilsValidator:
     def __init__(self, oli_client):
         """
         Initialize the DataValidator with an OLI client.

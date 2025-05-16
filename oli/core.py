@@ -5,9 +5,8 @@ from web3 import Web3
 import eth_account
 from eth_keys import keys
 
-from oli.attestation.base import AttestationBase
-from oli.attestation.utils_validator import DataValidator
-from oli.attestation.utils_other import DataEncoder
+from oli.attestation.utils_validator import UtilsValidator
+from oli.attestation.utils_other import UtilsOther
 from oli.attestation.onchain import OnchainAttestations
 from oli.attestation.offchain import OffchainAttestations
 from oli.data.fetcher import DataFetcher
@@ -71,13 +70,10 @@ class OLI:
         self.tag_value_sets = self.data_fetcher.get_OLI_value_sets()
         
         # Initialize validator
-        self.validator = DataValidator(self)
+        self.validator = UtilsValidator(self)
         
-        # Initialize data encoder
-        self.encoder = DataEncoder(self)
-        
-        # Initialize attestation base
-        self.attestation_base = AttestationBase(self)
+        # Initialize other utilities
+        self.utils_other = UtilsOther(self)
         
         # Initialize onchain and offchain attestations
         self.onchain = OnchainAttestations(self)
