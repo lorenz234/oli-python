@@ -19,7 +19,7 @@ import os
 oli = OLI(private_key=os.environ['private_key'], is_production=True)
 
 # Create an offchain label
-address = ""
+address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2"
 chain_id = "eip155:1" # Ethereum
 tags = {
     "contract_name": "growthepie donation address",
