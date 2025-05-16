@@ -51,7 +51,7 @@ class UtilsValidator:
 
         return tags
 
-    def check_label_correctness(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000"):
+    def check_label_correctness(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix=True):
         """
         Check if the label is compliant with the OLI Data Model. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI
         
@@ -60,6 +60,7 @@ class UtilsValidator:
             chain_id (str): Chain ID to check
             tags (dict): Tags to check
             ref_uid (str): Reference UID to check
+            auto_fix (bool): If True, will attempt to fix the label automatically using the fix_simple_tags_formatting function
             
         Returns:
             bool: True if the label is correct, False otherwise
@@ -67,7 +68,7 @@ class UtilsValidator:
         # basic checks
         self.checks_address(address)
         self.checks_chain_id(chain_id)
-        self.checks_tags(tags)
+        self.checks_tags(tags, auto_fix=auto_fix)
         self.checks_ref_uid(ref_uid)
         return True
         
@@ -117,7 +118,7 @@ class UtilsValidator:
             print(address)
             raise ValueError("Address must be a valid Ethereum address in hex format")
         
-    def checks_tags(self, tags):
+    def checks_tags(self, tags, auto_fix=False):
         """
         Check if tags are in the correct format.
         
@@ -129,7 +130,10 @@ class UtilsValidator:
         """
         # Check if tags is a dictionary
         if isinstance(tags, dict):
-            pass
+            if auto_fix:
+                tags = self.fix_simple_tags_formatting(tags)
+            else:
+                pass
         else:
             print(tags)
             raise ValueError("Tags must be a dictionary with OLI compliant tags (e.g., {'contract_name': 'example', 'is_eoa': True})")

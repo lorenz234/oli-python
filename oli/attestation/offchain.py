@@ -26,8 +26,11 @@ class OffchainAttestations:
         Returns:
             dict: API request response
         """
+        # fix simple formatting errors in tags
+        tags = self.oli.validator.fix_simple_tags_formatting(tags)
+
         # Check all necessary input parameters
-        self.oli.validator.check_label_correctness(address, chain_id, tags, ref_uid)
+        self.oli.validator.check_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
         
         # Encode the label data
         data = self.oli.utils_other.encode_label_data(chain_id, tags)

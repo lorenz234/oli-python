@@ -119,8 +119,8 @@ class OLI:
         return self.data_fetcher.get_full_decoded_export_parquet(file_path)
     
     # Expose validation methods
-    def check_label_correctness(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000"):
-        return self.validator.check_label_correctness(address, chain_id, tags, ref_uid)
+    def check_label_correctness(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix=True):
+        return self.validator.check_label_correctness(address, chain_id, tags, ref_uid, auto_fix)
     
     def fix_simple_tags_formatting(self, tags):
         return self.validator.fix_simple_tags_formatting(tags)
