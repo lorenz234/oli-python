@@ -8,7 +8,7 @@ class OnchainAttestations:
         """
         self.oli = oli_client
     
-    def create_onchain_label(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit=0):
+    def create_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
         """
         Create an onchain OLI label attestation for a contract.
         
@@ -76,7 +76,7 @@ class OnchainAttestations:
         else:
             raise Exception(f"Transaction failed onchain: {txn_receipt}")
     
-    def create_multi_onchain_labels(self, labels, gas_limit=0):
+    def create_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
         """
         Batch submit OLI labels in one transaction.
         
@@ -169,7 +169,7 @@ class OnchainAttestations:
 
         return f"0x{txn_hash.hex()}", uids
         
-    def revoke_attestation(self, uid_hex, gas_limit=200000):
+    def revoke_attestation(self, uid_hex: str, gas_limit: int=200000) -> str:
         """
         Revoke an onchain attestation using its UID.
         
@@ -219,7 +219,7 @@ class OnchainAttestations:
         else:
             raise Exception(f"Transaction failed: {txn_receipt}")
     
-    def multi_revoke_attestations(self, uids, gas_limit=10000000):
+    def multi_revoke_attestations(self, uids: list, gas_limit: int=10000000) -> tuple[str, int]:
         """
         Revoke multiple onchain attestations in a single transaction.
         

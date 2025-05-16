@@ -1,6 +1,8 @@
 import time
 import requests
 import secrets
+import json
+from requests import Response
 
 class OffchainAttestations:
     def __init__(self, oli_client):
@@ -12,7 +14,7 @@ class OffchainAttestations:
         """
         self.oli = oli_client
     
-    def create_offchain_label(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", retry=4):
+    def create_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4):
         """
         Create an offchain OLI label attestation for a contract.
         
@@ -57,7 +59,7 @@ class OffchainAttestations:
 
         return response
     
-    def post_offchain_attestation(self, attestation, filename="OLI.txt"):
+    def post_offchain_attestation(self, attestation: dict, filename: str="OLI.txt") -> Response:
         """
         Post API an attestation to the EAS API.
         
@@ -76,7 +78,7 @@ class OffchainAttestations:
         # Prepare payload for the API endpoint
         payload = {
             "filename": filename,
-            "textJson": self.oli.json.dumps(attestation, separators=(',', ':'))
+            "textJson": json.dumps(attestation, separators=(',', ':'))
         }
         
         headers = {
@@ -87,7 +89,7 @@ class OffchainAttestations:
         response = requests.post(self.oli.eas_api_url, json=payload, headers=headers)
         return response
     
-    def build_offchain_attestation(self, recipient, schema, data, ref_uid, revocable=True, expiration_time=0):
+    def build_offchain_attestation(self, recipient: str, schema: str, data: str, ref_uid: str, revocable: bool=True, expiration_time: int=0) -> dict:
         """
         Build an offchain attestation with the given parameters.
         
@@ -155,7 +157,7 @@ class OffchainAttestations:
         
         # Calculate the UID
         attester = '0x0000000000000000000000000000000000000000'  # for offchain UID calculation
-        uid = self.calculate_attestation_uid_v2(
+        uid = self.oli.utils_other.calculate_attestation_uid_v2(
             schema, recipient, attester, current_time, data, 
             expiration_time, revocable, ref_uid, salt=salt
         )
@@ -181,7 +183,7 @@ class OffchainAttestations:
         
         return result
     
-    def revoke_attestation(self, uid_hex, gas_limit=200000):
+    def revoke_attestation(self, uid_hex: str, gas_limit: int=200000):
         """
         Revoke an offchain attestation using its UID.
         
@@ -225,7 +227,7 @@ class OffchainAttestations:
         else:
             raise Exception(f"Transaction failed: {txn_receipt}")
     
-    def multi_revoke_attestations(self, uids, gas_limit=10000000):
+    def multi_revoke_attestations(self, uids: str, gas_limit: int=10000000):
         """
         Revoke multiple offchain attestations in a single transaction.
         

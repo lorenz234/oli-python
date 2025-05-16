@@ -16,7 +16,7 @@ class UtilsValidator:
             'SN_'       # Starknet
         ]
 
-    def fix_simple_tags_formatting(self, tags):
+    def fix_simple_tags_formatting(self, tags: dict) -> dict:
         """
         Fix basic formatting in the tags dictionary. This includes:
         - Ensuring all tag_ids and their value are lowercase
@@ -51,7 +51,7 @@ class UtilsValidator:
 
         return tags
 
-    def check_label_correctness(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix=True):
+    def check_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
         """
         Check if the label is compliant with the OLI Data Model. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI
         
@@ -72,7 +72,7 @@ class UtilsValidator:
         self.checks_ref_uid(ref_uid)
         return True
         
-    def checks_chain_id(self, chain_id):
+    def checks_chain_id(self, chain_id: str) -> bool:
         """
         Check if chain_id for a label is in CAIP-2 format.
         
@@ -102,7 +102,7 @@ class UtilsValidator:
         print(f"Unsupported chain ID format: {chain_id}")
         raise ValueError("Chain ID must be in CAIP-2 format (e.g., Base -> 'eip155:8453'), see this guide on CAIP-2: https://docs.portalhq.io/resources/chain-id-formatting")
 
-    def checks_address(self, address):
+    def checks_address(self, address: str) -> bool:
         """
         Check if address is a valid Ethereum address.
         
@@ -118,7 +118,7 @@ class UtilsValidator:
             print(address)
             raise ValueError("Address must be a valid Ethereum address in hex format")
         
-    def checks_tags(self, tags, auto_fix=False):
+    def checks_tags(self, tags: dict, auto_fix: bool=False) -> bool:
         """
         Check if tags are in the correct format.
         
@@ -183,7 +183,7 @@ class UtilsValidator:
                             else:
                                 print(f"Please use a list of values from the predefined value_set for {tag_id}: {self.oli.tag_definitions[tag_id]['value_set']}")
 
-    def checks_ref_uid(self, ref_uid):
+    def checks_ref_uid(self, ref_uid: str) -> bool:
         """
         Check if ref_uid is a valid UID.
         

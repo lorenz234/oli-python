@@ -13,7 +13,7 @@ class UtilsOther:
         """
         self.oli = oli_client
     
-    def encode_label_data(self, chain_id, tags_json):
+    def encode_label_data(self, chain_id: str, tags_json: dict) -> str:
         """
         Encode label data in the OLI format.
         
@@ -32,7 +32,7 @@ class UtilsOther:
         encoded_data = encode(['string', 'string'], [chain_id, tags_json])
         return f"0x{encoded_data.hex()}"
     
-    def estimate_gas_limit(self, function, tx_params, gas_limit):
+    def estimate_gas_limit(self, function, tx_params: dict, gas_limit: int) -> dict:
         """
         Estimate gas for a transaction.
         
@@ -55,7 +55,7 @@ class UtilsOther:
             tx_params["gas"] = 10000000  # Default fallback
         return tx_params
     
-    def calculate_attestation_uid_v2(self, schema, recipient, attester, timestamp, data, expiration_time=0, revocable=True, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", bump=0, salt=None):
+    def calculate_attestation_uid_v2(self, schema: str, recipient: str, attester: str, timestamp: int, data: str, expiration_time: int=0, revocable: bool=True, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", bump: int=0, salt: str=None) -> bytes:
         """
         Calculate the UID for an offchain attestation (v2).
         

@@ -10,7 +10,7 @@ class GraphQLClient:
         """
         self.oli = oli_client
     
-    def graphql_query_attestations(self, address=None, attester=None, timeCreated=None, revocationTime=None):
+    def graphql_query_attestations(self, address: str=None, attester: str=None, timeCreated: int=None, revocationTime: int=None) -> dict:
         """
         Queries attestations from the EAS GraphQL API based on the specified filters.
         

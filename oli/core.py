@@ -1,9 +1,7 @@
-import json
-import secrets
-import time
 from web3 import Web3
 import eth_account
 from eth_keys import keys
+from requests import Response
 
 from oli.attestation.utils_validator import UtilsValidator
 from oli.attestation.utils_other import UtilsOther
@@ -85,42 +83,42 @@ class OLI:
         print("...OLI client initialized successfully.")
     
     # Expose onchain attestation methods
-    def create_onchain_label(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit=0):
+    def create_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
         return self.onchain.create_onchain_label(address, chain_id, tags, ref_uid, gas_limit)
     
-    def create_multi_onchain_labels(self, labels, gas_limit=0):
+    def create_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
         return self.onchain.create_multi_onchain_labels(labels, gas_limit)
     
     # Expose offchain attestation methods
-    def create_offchain_label(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", retry=4):
+    def create_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4) -> Response:
         return self.offchain.create_offchain_label(address, chain_id, tags, ref_uid, retry)
     
     # Expose revocation methods
-    def revoke_attestation(self, uid_hex, onchain, gas_limit=200000):
+    def revoke_attestation(self, uid_hex: str, onchain: bool, gas_limit: int=200000) -> str:
         if onchain:
             return self.onchain.revoke_attestation(uid_hex, gas_limit)
         else:
             return self.offchain.revoke_attestation(uid_hex, gas_limit)
     
-    def multi_revoke_attestations(self, uids, onchain, gas_limit=10000000):
+    def multi_revoke_attestations(self, uids: str, onchain: bool, gas_limit: int=10000000) -> str:
         if onchain:
             return self.onchain.multi_revoke_attestations(uids, gas_limit)
         else:
             return self.offchain.multi_revoke_attestations(uids, gas_limit)
     
     # Expose query methods
-    def graphql_query_attestations(self, address=None, attester=None, timeCreated=None, revocationTime=None):
+    def graphql_query_attestations(self, address: str=None, attester: str=None, timeCreated: int=None, revocationTime: int=None) -> dict:
         return self.graphql_client.graphql_query_attestations(address, attester, timeCreated, revocationTime)
     
-    def get_full_raw_export_parquet(self, file_path="raw_labels.parquet"):
+    def get_full_raw_export_parquet(self, file_path: str="raw_labels.parquet") -> str:
         return self.data_fetcher.get_full_raw_export_parquet(file_path)
     
-    def get_full_decoded_export_parquet(self, file_path="decoded_labels.parquet"):
+    def get_full_decoded_export_parquet(self, file_path: str="decoded_labels.parquet") -> str:
         return self.data_fetcher.get_full_decoded_export_parquet(file_path)
     
     # Expose validation methods
-    def check_label_correctness(self, address, chain_id, tags, ref_uid="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix=True):
+    def check_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
         return self.validator.check_label_correctness(address, chain_id, tags, ref_uid, auto_fix)
     
-    def fix_simple_tags_formatting(self, tags):
+    def fix_simple_tags_formatting(self, tags: dict) -> dict:
         return self.validator.fix_simple_tags_formatting(tags)

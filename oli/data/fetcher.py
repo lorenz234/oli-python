@@ -27,7 +27,7 @@ class DataFetcher:
         else:
             raise Exception(f"Failed to fetch OLI tags from Github: {response.status_code} - {response.text}")
 
-    def get_OLI_value_sets(self):
+    def get_OLI_value_sets(self) -> dict:
         """
         Get latest value sets for OLI tags.
         
@@ -66,7 +66,7 @@ class DataFetcher:
 
         return value_sets
     
-    def get_full_raw_export_parquet(self, file_path="raw_labels.parquet"):
+    def get_full_raw_export_parquet(self, file_path: str="raw_labels.parquet") -> str:
         """
         Downloads the full raw export of all attestations in Parquet format.
         
@@ -88,7 +88,7 @@ class DataFetcher:
             print(f"Failed to download {url}. Status code: {response.status_code}")
             return None
 
-    def get_full_decoded_export_parquet(self, file_path="decoded_labels.parquet"):
+    def get_full_decoded_export_parquet(self, file_path: str="decoded_labels.parquet") -> str:
         """
         Downloads the full decoded export of all attestations in Parquet format.
         
