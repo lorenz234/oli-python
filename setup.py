@@ -24,8 +24,6 @@ setup(
     python_requires='>=3.9',
     install_requires=[
         'web3>=6.0.0',
-        'eth-account>=0.5.9',
-        'eth-keys>=0.4.0',
-        'requests>=2.28.0',
-    ],
+        'PyYAML>=6.0.0',
+    ]
 )
