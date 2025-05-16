@@ -18,7 +18,7 @@ class DataFetcher:
         Returns:
             dict: Dictionary of official OLI tags
         """
-        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/main/1_data_model/tags/tag_definitions.yml"
+        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/refs/heads/main/1_data_model/tags/tag_definitions.yml"
         response = requests.get(url)
         if response.status_code == 200:
             y = yaml.safe_load(response.text)
@@ -55,7 +55,7 @@ class DataFetcher:
             raise Exception(f"Failed to fetch owner_project value set from grwothepie projects api: {response.status_code} - {response.text}")
 
         # value set for usage_category
-        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/main/1_data_model/tags/valuesets/usage_category.yml"
+        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/refs/heads/main/1_data_model/tags/valuesets/usage_category.yml"
         response = requests.get(url)
         if response.status_code == 200:
             y = yaml.safe_load(response.text)
