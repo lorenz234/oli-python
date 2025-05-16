@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",  # Choose appropriate license
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
@@ -24,6 +24,6 @@ setup(
     python_requires='>=3.9',
     install_requires=[
         'web3>=6.0.0',
-        'PyYAML>=6.0.0',
+        'PyYAML>=6.0.0'
     ]
 )
