@@ -11,7 +11,7 @@ from oli.data.fetcher import DataFetcher
 from oli.data.graphql import GraphQLClient
 
 class OLI:
-    def __init__(self, private_key: str, is_production: bool = True) -> None:
+    def __init__(self, private_key: str, is_production: bool=True, custom_rpc_url: str=None) -> None:
         """
         Initialize the OLI API client.
         
@@ -34,7 +34,11 @@ class OLI:
             self.rpc_chain_number = 84532
             self.eas_api_url = "https://base-sepolia.easscan.org/offchain/store"
             self.eas_address = "0x4200000000000000000000000000000000000021"  # EAS contract address on testnet
-            
+        
+        # Use provided RPC endpoint if specified
+        if custom_rpc_url is not None:
+            self.rpc = custom_rpc_url
+
         # Initialize Web3 and account
         self.w3 = Web3(Web3.HTTPProvider(self.rpc))
         if not self.w3.is_connected():
