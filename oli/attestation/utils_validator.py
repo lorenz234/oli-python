@@ -51,9 +51,9 @@ class UtilsValidator:
 
         return tags
 
-    def check_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
+    def validate_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
         """
-        Check if the label is compliant with the OLI Data Model. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI
+        Validates if the label is compliant with the OLI Data Model. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI
         
         Args:
             address (str): Address to check
@@ -66,15 +66,15 @@ class UtilsValidator:
             bool: True if the label is correct, False otherwise
         """
         # basic checks
-        self.checks_address(address)
-        self.checks_chain_id(chain_id)
-        self.checks_tags(tags, auto_fix=auto_fix)
+        self.validate_address(address)
+        self.validate_chain_id(chain_id)
+        self.validate_tags(tags, auto_fix=auto_fix)
         self.checks_ref_uid(ref_uid)
         return True
         
-    def checks_chain_id(self, chain_id: str) -> bool:
+    def validate_chain_id(self, chain_id: str) -> bool:
         """
-        Check if chain_id for a label is in CAIP-2 format.
+        Validates if chain_id for a label is in CAIP-2 format.
         
         Args:
             chain_id (str): Chain ID to check
@@ -102,9 +102,9 @@ class UtilsValidator:
         print(f"Unsupported chain ID format: {chain_id}")
         raise ValueError("Chain ID must be in CAIP-2 format (e.g., Base -> 'eip155:8453'), see this guide on CAIP-2: https://docs.portalhq.io/resources/chain-id-formatting")
 
-    def checks_address(self, address: str) -> bool:
+    def validate_address(self, address: str) -> bool:
         """
-        Check if address is a valid Ethereum address.
+        Validates if address is a valid Ethereum address.
         
         Args:
             address (str): Address to check
@@ -118,7 +118,7 @@ class UtilsValidator:
             print(address)
             raise ValueError("Address must be a valid Ethereum address in hex format")
         
-    def checks_tags(self, tags: dict, auto_fix: bool=False) -> bool:
+    def validate_tags(self, tags: dict, auto_fix: bool=False) -> bool:
         """
         Check if tags are in the correct format.
         
@@ -183,9 +183,9 @@ class UtilsValidator:
                             else:
                                 print(f"Please use a list of values from the predefined value_set for {tag_id}: {self.oli.tag_definitions[tag_id]['value_set']}")
 
-    def checks_ref_uid(self, ref_uid: str) -> bool:
+    def validate_ref_uid(self, ref_uid: str) -> bool:
         """
-        Check if ref_uid is a valid UID.
+        Validates if ref_uid is a valid UID.
         
         Args:
             ref_uid (str): Reference UID to check

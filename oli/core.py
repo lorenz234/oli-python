@@ -18,8 +18,15 @@ class OLI:
         Args:
             private_key (str): The private key to sign attestations
             is_production (bool): Whether to use production or testnet
+            custom_rpc_url (str): Custom RPC URL to connect to Blockchain
         """
         print("Initializing OLI API client...")
+
+        # Get private key from environment if not provided
+        if private_key is None:
+            private_key = os.environ.get('OLI_PRIVATE_KEY')
+            if not private_key:
+                print("WARNING: Private key not provided. Please set the OLI_PRIVATE_KEY environment variable in case you plan to submit labels.")
 
         # Set network based on environment
         if is_production:
@@ -87,14 +94,14 @@ class OLI:
         print("...OLI client initialized successfully.")
     
     # Expose onchain attestation methods
-    def create_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
+    def submit_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
         return self.onchain.create_onchain_label(address, chain_id, tags, ref_uid, gas_limit)
     
-    def create_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
+    def submit_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
         return self.onchain.create_multi_onchain_labels(labels, gas_limit)
     
     # Expose offchain attestation methods
-    def create_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4) -> Response:
+    def submit_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4) -> Response:
         return self.offchain.create_offchain_label(address, chain_id, tags, ref_uid, retry)
     
     # Expose revocation methods
@@ -121,8 +128,8 @@ class OLI:
         return self.data_fetcher.get_full_decoded_export_parquet(file_path)
     
     # Expose validation methods
-    def check_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
-        return self.validator.check_label_correctness(address, chain_id, tags, ref_uid, auto_fix)
+    def validate_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
+        return self.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix)
     
     def fix_simple_tags_formatting(self, tags: dict) -> dict:
         return self.validator.fix_simple_tags_formatting(tags)
