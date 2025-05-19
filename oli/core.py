@@ -1,5 +1,6 @@
 from web3 import Web3
 import eth_account
+import os
 from eth_keys import keys
 from requests import Response
 
@@ -21,12 +22,6 @@ class OLI:
             custom_rpc_url (str): Custom RPC URL to connect to Blockchain
         """
         print("Initializing OLI API client...")
-
-        # Get private key from environment if not provided
-        if private_key is None:
-            private_key = os.environ.get('OLI_PRIVATE_KEY')
-            if not private_key:
-                print("WARNING: Private key not provided. Please set the OLI_PRIVATE_KEY environment variable in case you plan to submit labels.")
 
         # Set network based on environment
         if is_production:
@@ -50,7 +45,13 @@ class OLI:
         self.w3 = Web3(Web3.HTTPProvider(self.rpc))
         if not self.w3.is_connected():
             raise Exception("Failed to connect to the Ethereum node")
-            
+        
+        # Try to get private key from environment if not provided
+        if private_key is None:
+            private_key = os.environ.get('OLI_PRIVATE_KEY')
+            if not private_key:
+                print("WARNING: Private key not provided. Please set the OLI_PRIVATE_KEY environment variable in case you plan to submit labels.")
+
         # Convert the hex private key to the proper key object
         self.private_key = private_key
         if private_key.startswith('0x'):
@@ -91,18 +92,18 @@ class OLI:
         # Initialize GraphQL client
         self.graphql_client = GraphQLClient(self)
 
-        print("...OLI client initialized successfully.")
+        print("...OLI client successfully initialized.")
     
     # Expose onchain attestation methods
     def submit_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
-        return self.onchain.create_onchain_label(address, chain_id, tags, ref_uid, gas_limit)
+        return self.onchain.submit_onchain_label(address, chain_id, tags, ref_uid, gas_limit)
     
     def submit_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
-        return self.onchain.create_multi_onchain_labels(labels, gas_limit)
+        return self.onchain.submit_multi_onchain_labels(labels, gas_limit)
     
     # Expose offchain attestation methods
     def submit_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4) -> Response:
-        return self.offchain.create_offchain_label(address, chain_id, tags, ref_uid, retry)
+        return self.offchain.submit_offchain_label(address, chain_id, tags, ref_uid, retry)
     
     # Expose revocation methods
     def revoke_attestation(self, uid_hex: str, onchain: bool, gas_limit: int=200000) -> str:
