@@ -12,7 +12,7 @@ from oli.data.fetcher import DataFetcher
 from oli.data.graphql import GraphQLClient
 
 class OLI:
-    def __init__(self, private_key: str, is_production: bool=True, custom_rpc_url: str=None) -> None:
+    def __init__(self, private_key: str=None, is_production: bool=True, custom_rpc_url: str=None) -> None:
         """
         Initialize the OLI API client.
         
@@ -51,18 +51,19 @@ class OLI:
             private_key = os.environ.get('OLI_PRIVATE_KEY')
             if not private_key:
                 print("WARNING: Private key not provided. Please set the OLI_PRIVATE_KEY environment variable in case you plan to submit labels.")
-
-        # Convert the hex private key to the proper key object
-        self.private_key = private_key
-        if private_key.startswith('0x'):
-            private_key_bytes = private_key[2:]
-        else:
-            private_key_bytes = private_key
-        private_key_obj = keys.PrivateKey(bytes.fromhex(private_key_bytes))
+                print("WARNING: OLI client in read mode only.")
         
-        # Create account from private key
-        self.account = eth_account.Account.from_key(private_key_obj)
-        self.address = self.account.address
+        self.private_key = private_key
+        if self.private_key:
+            # Convert the hex private key to the proper key object
+            if private_key.startswith('0x'):
+                private_key_bytes = private_key[2:]
+            else:
+                private_key_bytes = private_key
+            # Create account from private key
+            private_key_obj = keys.PrivateKey(bytes.fromhex(private_key_bytes))
+            self.account = eth_account.Account.from_key(private_key_obj)
+            self.address = self.account.address
         
         # Label Pool Schema for OLI
         self.oli_label_pool_schema = '0xb763e62d940bed6f527dd82418e146a904e62a297b8fa765c9b3e1f0bc6fdd68'
