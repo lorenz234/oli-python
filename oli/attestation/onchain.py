@@ -27,7 +27,7 @@ class OnchainAttestations:
         tags = self.oli.validator.fix_simple_tags_formatting(tags)
 
         # Check all necessary input parameters
-        self.oli.validator.check_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
+        self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
 
         # Encode the label data
         data = self.oli.utils_other.encode_label_data(chain_id, tags)
@@ -107,7 +107,7 @@ class OnchainAttestations:
             label['tags'] = self.oli.validator.fix_simple_tags_formatting(label['tags'])
 
             # run checks on each label
-            self.oli.validator.check_label_correctness(label['address'], label['chain_id'], label['tags'], auto_fix=False)
+            self.oli.validator.validate_label_correctness(label['address'], label['chain_id'], label['tags'], auto_fix=False)
 
             # check if ref_uid is provided
             if 'ref_uid' not in label:

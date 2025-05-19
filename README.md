@@ -18,7 +18,7 @@ import os
 # Make sure to pull in your private key from an .env file
 oli = OLI(private_key=os.environ['OLI_PRIVATE_KEY'], is_production=True)
 
-# Create an offchain label
+# Create a label
 address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2"
 chain_id = "eip155:1" # Ethereum Mainnet
 tags = {
