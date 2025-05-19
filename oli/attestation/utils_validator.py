@@ -69,7 +69,7 @@ class UtilsValidator:
         self.validate_address(address)
         self.validate_chain_id(chain_id)
         self.validate_tags(tags, auto_fix=auto_fix)
-        self.checks_ref_uid(ref_uid)
+        self.validate_ref_uid(ref_uid)
         return True
         
     def validate_chain_id(self, chain_id: str) -> bool:

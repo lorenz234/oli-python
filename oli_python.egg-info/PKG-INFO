@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: oli-python
-Version: 1.0.0
+Version: 1.0.1
 Summary: Python SDK for interacting with the Open Labels Initiative; A framework for address labels in the blockchain space. Read & write labels into the OLI Label Pool, check your labels for OLI compliance.
 Home-page: https://github.com/openlabelsinitiative/oli-python
 Author: Lorenz Lehmann
@@ -45,7 +45,7 @@ import os
 # Make sure to pull in your private key from an .env file
 oli = OLI(private_key=os.environ['OLI_PRIVATE_KEY'], is_production=True)
 
-# Create an offchain label
+# Create a label
 address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2"
 chain_id = "eip155:1" # Ethereum Mainnet
 tags = {
@@ -60,12 +60,11 @@ print(f"You can attest your label: {possible_to_attest}")
 
 # Submit a label as an offchain attestation
 response = oli.submit_offchain_label(address, chain_id, tags)
-print(f"Attestation created: {response.text}")
+print(f"Label submitted offchain with response: {response.text}")
 
 # Submit a label as an onchain attestation
 tx_hash, uid = oli.submit_onchain_label(address, chain_id, tags)
-print(f"Transaction hash: {tx_hash}")
-print(f"Attestation UID: {uid}")
+print(f"Label submitted onchain with hash: {tx_hash} and uid: {uid}")
 
 # Batch submit multiple labels as one onchain attestation
 labels = [
@@ -73,14 +72,15 @@ labels = [
     {'address': address, 'chain_id': chain_id, 'tags': tags}
 ]
 tx_hash, uids = oli.submit_multi_onchain_labels(labels)
-print(f"Batch transaction hash: {tx_hash}")
-print(f"Attestation UIDs: {uids}")
+print(f"Labels batch submitted onchain with transaction hash: {tx_hash} and uids: {uids}")
 
 # Revoke an attestation (revoking onchain attestations here)
 trx_hash = oli.revoke_attestation(uid, onchain=True)
+print(f"Label {uid} revoked with hash: {trx_hash}")
 
 # Revoke multiple attestations (revoking onchain attestations here)
 trx_hash, count = oli.multi_revoke_attestations(uids, onchain=True)
+print(f"Labels batch revoked with hash: {trx_hash}")
 
 ```
 
