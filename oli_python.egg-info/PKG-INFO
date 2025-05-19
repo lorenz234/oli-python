@@ -60,12 +60,11 @@ print(f"You can attest your label: {possible_to_attest}")
 
 # Submit a label as an offchain attestation
 response = oli.submit_offchain_label(address, chain_id, tags)
-print(f"Attestation created: {response.text}")
+print(f"Label submitted offchain with response: {response.text}")
 
 # Submit a label as an onchain attestation
 tx_hash, uid = oli.submit_onchain_label(address, chain_id, tags)
-print(f"Transaction hash: {tx_hash}")
-print(f"Attestation UID: {uid}")
+print(f"Label submitted onchain with hash: {tx_hash} and uid: {uid}")
 
 # Batch submit multiple labels as one onchain attestation
 labels = [
@@ -73,14 +72,15 @@ labels = [
     {'address': address, 'chain_id': chain_id, 'tags': tags}
 ]
 tx_hash, uids = oli.submit_multi_onchain_labels(labels)
-print(f"Batch transaction hash: {tx_hash}")
-print(f"Attestation UIDs: {uids}")
+print(f"Labels batch submitted onchain with transaction hash: {tx_hash} and uids: {uids}")
 
 # Revoke an attestation (revoking onchain attestations here)
 trx_hash = oli.revoke_attestation(uid, onchain=True)
+print(f"Label {uid} revoked with hash: {trx_hash}")
 
 # Revoke multiple attestations (revoking onchain attestations here)
 trx_hash, count = oli.multi_revoke_attestations(uids, onchain=True)
+print(f"Labels batch revoked with hash: {trx_hash}")
 
 ```
 
