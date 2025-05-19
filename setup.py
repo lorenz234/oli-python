@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="oli-python",
-    version="0.1.1",
+    version="1.0.0",
     author="Lorenz Lehmann",
     author_email="lorenz@growthepie.xyz",
     description="Python SDK for interacting with the Open Labels Initiative; A framework for address labels in the blockchain space. Read & write labels into the OLI Label Pool, check your labels for OLI compliance.",

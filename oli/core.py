@@ -1,5 +1,6 @@
 from web3 import Web3
 import eth_account
+import os
 from eth_keys import keys
 from requests import Response
 
@@ -18,6 +19,7 @@ class OLI:
         Args:
             private_key (str): The private key to sign attestations
             is_production (bool): Whether to use production or testnet
+            custom_rpc_url (str): Custom RPC URL to connect to Blockchain
         """
         print("Initializing OLI API client...")
 
@@ -43,7 +45,13 @@ class OLI:
         self.w3 = Web3(Web3.HTTPProvider(self.rpc))
         if not self.w3.is_connected():
             raise Exception("Failed to connect to the Ethereum node")
-            
+        
+        # Try to get private key from environment if not provided
+        if private_key is None:
+            private_key = os.environ.get('OLI_PRIVATE_KEY')
+            if not private_key:
+                print("WARNING: Private key not provided. Please set the OLI_PRIVATE_KEY environment variable in case you plan to submit labels.")
+
         # Convert the hex private key to the proper key object
         self.private_key = private_key
         if private_key.startswith('0x'):
@@ -84,18 +92,18 @@ class OLI:
         # Initialize GraphQL client
         self.graphql_client = GraphQLClient(self)
 
-        print("...OLI client initialized successfully.")
+        print("...OLI client successfully initialized.")
     
     # Expose onchain attestation methods
-    def create_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
-        return self.onchain.create_onchain_label(address, chain_id, tags, ref_uid, gas_limit)
+    def submit_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
+        return self.onchain.submit_onchain_label(address, chain_id, tags, ref_uid, gas_limit)
     
-    def create_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
-        return self.onchain.create_multi_onchain_labels(labels, gas_limit)
+    def submit_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
+        return self.onchain.submit_multi_onchain_labels(labels, gas_limit)
     
     # Expose offchain attestation methods
-    def create_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4) -> Response:
-        return self.offchain.create_offchain_label(address, chain_id, tags, ref_uid, retry)
+    def submit_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4) -> Response:
+        return self.offchain.submit_offchain_label(address, chain_id, tags, ref_uid, retry)
     
     # Expose revocation methods
     def revoke_attestation(self, uid_hex: str, onchain: bool, gas_limit: int=200000) -> str:
@@ -121,8 +129,8 @@ class OLI:
         return self.data_fetcher.get_full_decoded_export_parquet(file_path)
     
     # Expose validation methods
-    def check_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
-        return self.validator.check_label_correctness(address, chain_id, tags, ref_uid, auto_fix)
+    def validate_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
+        return self.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix)
     
     def fix_simple_tags_formatting(self, tags: dict) -> dict:
         return self.validator.fix_simple_tags_formatting(tags)

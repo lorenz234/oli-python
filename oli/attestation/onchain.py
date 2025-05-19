@@ -8,9 +8,9 @@ class OnchainAttestations:
         """
         self.oli = oli_client
     
-    def create_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
+    def submit_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
         """
-        Create an onchain OLI label attestation for a contract.
+        Submit an OLI label as an onchain attestation to the OLI Label Pool.
         
         Args:
             address (str): The contract address to label
@@ -76,9 +76,9 @@ class OnchainAttestations:
         else:
             raise Exception(f"Transaction failed onchain: {txn_receipt}")
     
-    def create_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
+    def submit_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
         """
-        Batch submit OLI labels in one transaction.
+        Batch submit multiple OLI labels as an onchain attestation to the OLI Label Pool.
         
         Args:
             labels (list): List of labels, containing dictionaries with 'address', 'tags', and 'chain_id' (, optional 'ref_uid')

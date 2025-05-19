@@ -14,9 +14,9 @@ class OffchainAttestations:
         """
         self.oli = oli_client
     
-    def create_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4):
+    def submit_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4):
         """
-        Create an offchain OLI label attestation for a contract.
+        Submit an OLI label as an offchain attestation to the OLI Label Pool.
         
         Args:
             address (str): The contract address to label
