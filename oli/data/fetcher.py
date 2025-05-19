@@ -68,7 +68,7 @@ class DataFetcher:
     
     def get_full_raw_export_parquet(self, file_path: str="raw_labels.parquet") -> str:
         """
-        Downloads the full raw export of all attestations in Parquet format.
+        Downloads the full raw export of all labels in the OLI Label Pool as a Parquet file.
         
         Args:
             file_path (str): Path where the file will be saved. Defaults to "raw_labels.parquet".
@@ -90,7 +90,7 @@ class DataFetcher:
 
     def get_full_decoded_export_parquet(self, file_path: str="decoded_labels.parquet") -> str:
         """
-        Downloads the full decoded export of all attestations in Parquet format.
+        Downloads the full decoded export of all labels in the OLI Label Pool as a Parquet file.
         
         Args:
             file_path (str): Path where the file will be saved. Defaults to "decoded_labels.parquet".

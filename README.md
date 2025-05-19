@@ -63,8 +63,7 @@ trx_hash, count = oli.multi_revoke_attestations(uids, onchain=True)
 from oli import OLI
 import os
 
-# Initialize the client
-# Make sure to pull in your private key from an .env file
+# Initialize the client (read only mode doesn't require a private key)
 oli = OLI(is_production=True)
 
 # Query attestations for a specific address
@@ -81,14 +80,16 @@ oli.get_full_decoded_export_parquet()
 
 ## Wallet Requirements
 
-Make sure your wallet contains ETH to pay for onchain attestations (including revocations). Offchain attestations are free.
+The [OLI Label Pool](https://github.com/openlabelsinitiative/OLI/tree/main/2_label_pool) lives on Base as an [Ethereum Attestation schema](https://base.easscan.org/schema/view/0xb763e62d940bed6f527dd82418e146a904e62a297b8fa765c9b3e1f0bc6fdd68). 
 
-The OLI Label Pool is deployed on **Base mainnet**. For testing purposes, you can use Base Sepolia Testnet (set `is_production=False`).
+Make sure your wallet contains ETH on **Base Mainnet** to pay for onchain transaction (including offchain revocations). Offchain attestations are free.
+
+For testing purposes, you can use Base Sepolia Testnet by setting `is_production=False` when initializing the client.
 
 ## Features
 
-- Submit onchain (single or batch) and offchain (single) OLI label attestations
-- Revoke attestations (single or batch)
+- Submit onchain (single or batch) and offchain (single) labels into the OLI Label Pool
+- Revoke your own labels (single or batch)
 - Validate if your label is OLI compliant
 - Query attestations using GraphQL
 - Download full dataset exports in Parquet format
