@@ -63,8 +63,8 @@ print(f"Labels batch revoked with hash: {trx_hash}")
 from oli import OLI
 import os
 
-# Initialize the client (read only mode doesn't require a private key)
-oli = OLI(is_production=True)
+# Initialize the client (read mode only doesn't require a private key)
+oli = OLI()
 
 # Query attestations for a specific address
 result = oli.graphql_query_attestations(address=address)
