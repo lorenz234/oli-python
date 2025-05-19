@@ -113,7 +113,7 @@ class OnchainAttestations:
             if 'ref_uid' not in label:
                 label['ref_uid'] = "0x0000000000000000000000000000000000000000000000000000000000000000"
             else:
-                self.oli.validator.checks_ref_uid(label['ref_uid'])
+                self.oli.validator.validate_ref_uid(label['ref_uid'])
 
             # ABI encode data for each attestation
             data = self.oli.utils_other.encode_label_data(label['chain_id'], label['tags'])
