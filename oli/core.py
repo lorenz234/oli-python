@@ -120,8 +120,8 @@ class OLI:
             return self.offchain.multi_revoke_attestations(uids, gas_limit)
     
     # Expose query methods
-    def graphql_query_attestations(self, address: str=None, attester: str=None, timeCreated: int=None, revocationTime: int=None) -> dict:
-        return self.graphql_client.graphql_query_attestations(address, attester, timeCreated, revocationTime)
+    def graphql_query_attestations(self, address: str=None, attester: str=None, timeCreated: int=None, revocationTime: int=None, take: int=None, id: str=None,expand_json: bool=True) -> dict:
+        return self.graphql_client.graphql_query_attestations(address, attester, timeCreated, revocationTime, take, id, expand_json)
     
     def get_full_raw_export_parquet(self, file_path: str="raw_labels.parquet") -> str:
         return self.data_fetcher.get_full_raw_export_parquet(file_path)
