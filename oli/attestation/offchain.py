@@ -51,6 +51,13 @@ class OffchainAttestations:
         while response.status_code != 200 and retry > 0:
             retry -= 1
             time.sleep(2 ** (n0 - retry)) # exponential backoff
+            # rebuild the attestation (assigns new timestamp) to not get rate limited by EAS post endpoint
+            attestation = self.build_offchain_attestation(
+                recipient=address, 
+                schema=self.oli.oli_label_pool_schema, 
+                data=data, 
+                ref_uid=ref_uid
+            )
             response = self.post_offchain_attestation(attestation)
         
         # if it fails after all retries, raise an error
