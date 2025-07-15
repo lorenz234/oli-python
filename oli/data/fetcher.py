@@ -37,7 +37,7 @@ class DataFetcher:
         value_sets = {}
 
         # value sets from self.oli.tag_definitions (must be a list)
-        additional_value_sets = {i['tag_id']: i['value_set'] for i in self.oli.tag_definitions.values() if 'value_set' in i}
+        additional_value_sets = {i['tag_id']: i['schema']['enum'] for i in self.oli.tag_definitions.values() if 'schema' in i and 'enum' in i['schema']}
         for tag_id, value_set in additional_value_sets.items():
             if isinstance(value_set, list):
                 # convert all string values to lowercase and keep the rest as is
