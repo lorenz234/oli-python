@@ -43,7 +43,7 @@ class UtilsValidator:
                     tags[k] = False
             elif isinstance(v, list):
                 tags[k] = [i.strip() if isinstance(i, str) else i for i in v]
-                
+
         # Checksum address tags
         for k, v in tags.items():
             if k in self.oli.tag_definitions and 'minLength' in self.oli.tag_definitions[k]['schema']:
@@ -148,22 +148,36 @@ class UtilsValidator:
             
             # Check if the tag_id is in the correct format. So far implemented [boolean, string, integer, list, float, string(42), string(66), date (YYYY-MM-DD HH:MM:SS)]
             else:
-                if self.oli.tag_definitions[tag_id]['type'] == 'boolean' and not isinstance(tags[tag_id], bool):
+                if self.oli.tag_definitions[tag_id]['schema']['type'] == 'boolean' and not isinstance(tags[tag_id], bool):
                     print(f"WARNING: Tag value for {tag_id} must be a boolean (True/False).")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'string' and not isinstance(tags[tag_id], str):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and not isinstance(tags[tag_id], str):
                     print(f"WARNING: Tag value for {tag_id} must be a string.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'integer' and not isinstance(tags[tag_id], int):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'integer' and not isinstance(tags[tag_id], int):
                     print(f"WARNING: Tag value for {tag_id} must be an integer.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'float' and not isinstance(tags[tag_id], float):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'float' and not isinstance(tags[tag_id], float):
                     print(f"WARNING: Tag value for {tag_id} must be a float.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'list' and not isinstance(tags[tag_id], list):
-                    print(f"WARNING: Tag value for {tag_id} must be a list.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'string(42)' and not self.oli.w3.is_address(tags[tag_id]):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'array' and not isinstance(tags[tag_id], list):
+                    print(f"WARNING: Tag value for {tag_id} must be an array.")
+                elif (
+                        self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('minLength') == 42 and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('maxLength') == 42 and 
+                        not self.oli.w3.is_address(tags[tag_id])
+                    ):
                     print(f"WARNING: Tag value for {tag_id} must be a valid Ethereum address string with '0x'.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'string(66)' and not (len(tags[tag_id]) == 66 and tags[tag_id].startswith('0x')):
+                elif (
+                        self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('minLength') == 66 and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('maxLength') == 66 and 
+                        not (len(tags[tag_id]) == 66 and tags[tag_id].startswith('0x'))
+                    ):
                     print(f"WARNING: Tag value for {tag_id} must be a valid hex string with '0x' prefix and 64 hex characters (66 characters total).")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'date (YYYY-MM-DD HH:MM:SS)' and not isinstance(tags[tag_id], str):
-                    print(f"WARNING: Tag value for {tag_id} must be a string in the format 'YYYY-MM-DD HH:MM:SS'.")
+                elif (
+                        self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('format') == 'date-time' and 
+                        not isinstance(tags[tag_id], str)
+                    ):
+                    print(f"WARNING: Tag value for {tag_id} must be a string in date-time format (e.g., '2023-12-31 23:59:59').")
 
             # Check if the value is in the value set
             if tag_id in self.oli.tag_value_sets:

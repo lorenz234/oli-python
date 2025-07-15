@@ -36,13 +36,26 @@ class DataFetcher:
         """
         value_sets = {}
 
-        # value sets from self.oli.tag_definitions (must be a list)
-        additional_value_sets = {i['tag_id']: i['schema']['enum'] for i in self.oli.tag_definitions.values() if 'schema' in i and 'enum' in i['schema']}
-        for tag_id, value_set in additional_value_sets.items():
-            if isinstance(value_set, list):
-                # convert all string values to lowercase and keep the rest as is
-                value_set = [i.lower() if isinstance(i, str) else i for i in value_set]
-                value_sets[tag_id] = value_set
+        # Extract value sets from tag definitions (must be a list)
+        for tag_def in self.oli.tag_definitions.values():
+            if 'schema' not in tag_def:
+                continue
+            
+            schema = tag_def['schema']
+            tag_id = tag_def['tag_id']
+            value_set = None
+            
+            # Get enum from direct schema or array items
+            if 'enum' in schema:
+                value_set = schema['enum']
+            elif (schema.get('type') == 'array' and 
+                'items' in schema and 
+                'enum' in schema['items']):
+                value_set = schema['items']['enum']
+            
+            # Process and add to value_sets
+            if value_set and isinstance(value_set, list):
+                value_sets[tag_id] = [i.lower() if isinstance(i, str) else i for i in value_set]
 
         # value set for owner_project
         url = "https://api.growthepie.xyz/v1/labels/projects.json" 
