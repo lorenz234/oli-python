@@ -19,7 +19,7 @@ class UtilsValidator:
     def fix_simple_tags_formatting(self, tags: dict) -> dict:
         """
         Fix basic formatting in the tags dictionary. This includes:
-        - Ensuring all tag_ids and their value are lowercase
+        - Ensuring all tag_ids are lowercase
         - Booling values are converted from strings to booleans
         - Removing leading/trailing whitespace from string values
         - Checksum address (string(42)) tags
@@ -33,21 +33,22 @@ class UtilsValidator:
         # Convert tag_ids to lowercase
         tags = {k.lower(): v for k, v in tags.items()}
 
-        # Convert all tag_values to lower case & strip whitespaces, then single boolean values from strings to booleans
+        # Strip whitespaces, then turn boolean values from strings to booleans
         for k, v in tags.items():
             if isinstance(v, str):
-                tags[k] = v.strip().lower()
+                tags[k] = v.strip()
                 if tags[k] == 'true':
                     tags[k] = True
                 elif tags[k] == 'false':
                     tags[k] = False
             elif isinstance(v, list):
-                tags[k] = [i.strip().lower() if isinstance(i, str) else i for i in v]
+                tags[k] = [i.strip() if isinstance(i, str) else i for i in v]
 
-        # Checksum address (string(42)) and transaction hash (string(66)) tags
+        # Checksum address tags
         for k, v in tags.items():
-            if k in self.oli.tag_definitions and self.oli.tag_definitions[k]['type'] == 'string(42)':
-                tags[k] = self.oli.w3.to_checksum_address(v)
+            if k in self.oli.tag_definitions and 'minLength' in self.oli.tag_definitions[k]['schema']:
+                if self.oli.tag_definitions[k]['schema']['minLength'] == 42 and self.oli.tag_definitions[k]['schema']['maxLength'] == 42:
+                    tags[k] = self.oli.w3.to_checksum_address(v)
 
         return tags
 
@@ -138,7 +139,7 @@ class UtilsValidator:
             print(tags)
             raise ValueError("Tags must be a dictionary with OLI compliant tags (e.g., {'contract_name': 'example', 'is_eoa': True})")
         
-        # Check each tag_id in the dictionary
+        # Check each tag_id in the dictionary # TODO: redo this with tag_definitions 2.0 and schema, should be more efficient
         for tag_id in tags.keys():
             
             # Check if the tag_id is in the official OLI tag list
@@ -147,22 +148,36 @@ class UtilsValidator:
             
             # Check if the tag_id is in the correct format. So far implemented [boolean, string, integer, list, float, string(42), string(66), date (YYYY-MM-DD HH:MM:SS)]
             else:
-                if self.oli.tag_definitions[tag_id]['type'] == 'boolean' and not isinstance(tags[tag_id], bool):
+                if self.oli.tag_definitions[tag_id]['schema']['type'] == 'boolean' and not isinstance(tags[tag_id], bool):
                     print(f"WARNING: Tag value for {tag_id} must be a boolean (True/False).")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'string' and not isinstance(tags[tag_id], str):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and not isinstance(tags[tag_id], str):
                     print(f"WARNING: Tag value for {tag_id} must be a string.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'integer' and not isinstance(tags[tag_id], int):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'integer' and not isinstance(tags[tag_id], int):
                     print(f"WARNING: Tag value for {tag_id} must be an integer.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'float' and not isinstance(tags[tag_id], float):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'float' and not isinstance(tags[tag_id], float):
                     print(f"WARNING: Tag value for {tag_id} must be a float.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'list' and not isinstance(tags[tag_id], list):
-                    print(f"WARNING: Tag value for {tag_id} must be a list.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'string(42)' and not self.oli.w3.is_address(tags[tag_id]):
+                elif self.oli.tag_definitions[tag_id]['schema']['type'] == 'array' and not isinstance(tags[tag_id], list):
+                    print(f"WARNING: Tag value for {tag_id} must be an array.")
+                elif (
+                        self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('minLength') == 42 and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('maxLength') == 42 and 
+                        not self.oli.w3.is_address(tags[tag_id])
+                    ):
                     print(f"WARNING: Tag value for {tag_id} must be a valid Ethereum address string with '0x'.")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'string(66)' and not (len(tags[tag_id]) == 66 and tags[tag_id].startswith('0x')):
+                elif (
+                        self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('minLength') == 66 and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('maxLength') == 66 and 
+                        not (len(tags[tag_id]) == 66 and tags[tag_id].startswith('0x'))
+                    ):
                     print(f"WARNING: Tag value for {tag_id} must be a valid hex string with '0x' prefix and 64 hex characters (66 characters total).")
-                elif self.oli.tag_definitions[tag_id]['type'] == 'date (YYYY-MM-DD HH:MM:SS)' and not isinstance(tags[tag_id], str):
-                    print(f"WARNING: Tag value for {tag_id} must be a string in the format 'YYYY-MM-DD HH:MM:SS'.")
+                elif (
+                        self.oli.tag_definitions[tag_id]['schema']['type'] == 'string' and 
+                        self.oli.tag_definitions[tag_id]['schema'].get('format') == 'date-time' and 
+                        not isinstance(tags[tag_id], str)
+                    ):
+                    print(f"WARNING: Tag value for {tag_id} must be a string in date-time format (e.g., '2023-12-31 23:59:59').")
 
             # Check if the value is in the value set
             if tag_id in self.oli.tag_value_sets:
