@@ -139,7 +139,7 @@ class UtilsValidator:
             print(tags)
             raise ValueError("Tags must be a dictionary with OLI compliant tags (e.g., {'contract_name': 'example', 'is_eoa': True})")
         
-        # Check each tag_id in the dictionary
+        # Check each tag_id in the dictionary # TODO: redo this with tag_definitions 2.0 and schema, should be more efficient
         for tag_id in tags.keys():
             
             # Check if the tag_id is in the official OLI tag list
