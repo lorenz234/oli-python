@@ -4,7 +4,7 @@ Version: 1.2.1
 Summary: Python SDK for interacting with the Open Labels Initiative; A standard, registry and trust layer for EVM address labels.
 Home-page: https://github.com/openlabelsinitiative/oli-python
 Author: Lorenz Lehmann
-Author-email: lorenz@growthepie.com
+Author-email: lorenz@growthepie.xyz
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
