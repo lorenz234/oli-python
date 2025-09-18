@@ -18,7 +18,7 @@ class DataFetcher:
         Returns:
             dict: Dictionary of official OLI tags
         """
-        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/refs/heads/main/1_data_model/tags/tag_definitions.yml"
+        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/refs/heads/main/1_label_schema/tags/tag_definitions.yml"
         response = requests.get(url)
         if response.status_code == 200:
             y = yaml.safe_load(response.text)
@@ -58,7 +58,7 @@ class DataFetcher:
                 value_sets[tag_id] = [i.lower() if isinstance(i, str) else i for i in value_set]
 
         # value set for owner_project
-        url = "https://api.growthepie.xyz/v1/labels/projects.json" 
+        url = "https://api.growthepie.com/v1/labels/projects.json" 
         response = requests.get(url)
         if response.status_code == 200:
             y = yaml.safe_load(response.text)
@@ -68,7 +68,7 @@ class DataFetcher:
             raise Exception(f"Failed to fetch owner_project value set from grwothepie projects api: {response.status_code} - {response.text}")
 
         # value set for usage_category
-        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/refs/heads/main/1_data_model/tags/valuesets/usage_category.yml"
+        url = "https://raw.githubusercontent.com/openlabelsinitiative/OLI/refs/heads/main/1_label_schema/tags/valuesets/usage_category.yml"
         response = requests.get(url)
         if response.status_code == 200:
             y = yaml.safe_load(response.text)
@@ -89,7 +89,7 @@ class DataFetcher:
         Returns:
             str: Path to the downloaded Parquet file
         """
-        url = "https://api.growthepie.xyz/v1/oli/labels_raw.parquet"
+        url = "https://api.growthepie.com/v1/oli/labels_raw.parquet"
         
         response = requests.get(url, stream=True)
         if response.status_code == 200:
@@ -111,7 +111,7 @@ class DataFetcher:
         Returns:
             str: Path to the downloaded Parquet file
         """
-        url = "https://api.growthepie.xyz/v1/oli/labels_decoded.parquet"
+        url = "https://api.growthepie.com/v1/oli/labels_decoded.parquet"
         
         response = requests.get(url, stream=True)
         if response.status_code == 200:

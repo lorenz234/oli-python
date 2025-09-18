@@ -13,7 +13,7 @@ class UtilsValidator:
             'tron:',    # TRON
             'stellar:', # Stellar
             'bip122:',  # Bitcoin
-            'SN_'       # Starknet
+            'SN_MAIN'   # Starknet
         ]
 
     def fix_simple_tags_formatting(self, tags: dict) -> dict:
@@ -144,7 +144,7 @@ class UtilsValidator:
             
             # Check if the tag_id is in the official OLI tag list
             if tag_id not in self.oli.tag_ids:
-                print(f"WARNING: Tag tag_id '{tag_id}' is not an official OLI tag. Please check the 'oli.tag_definitions' or https://github.com/openlabelsinitiative/OLI/blob/main/1_data_model/tags/tag_definitions.yml.")
+                print(f"WARNING: Tag tag_id '{tag_id}' is not an official OLI tag. Please check 'oli.tag_definitions' or https://github.com/openlabelsinitiative/OLI/blob/main/1_label_schema/tags/tag_definitions.yml.")
             
             # Check if the tag_id is in the correct format. So far implemented [boolean, string, integer, list, float, string(42), string(66), date (YYYY-MM-DD HH:MM:SS)]
             else:
