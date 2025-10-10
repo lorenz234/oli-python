@@ -10,6 +10,9 @@ class GraphQLClient:
             oli_client: The OLI client instance
         """
         self.oli = oli_client
+        self.headers = {
+            "Content-Type": "application/json"
+        }
     
     def graphql_query_attestations(self, address: str=None, attester: str=None, timeCreated: int=None, revocationTime: int=None, take: int=None, id: str=None, expand_json: bool=True) -> dict:
         """
@@ -87,11 +90,7 @@ class GraphQLClient:
             revocationTime = int(revocationTime)
             variables["where"]["revocationTime"] = {"gte": revocationTime}
         
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        response = requests.post(self.oli.graphql, json={"query": query, "variables": variables}, headers=headers)
+        response = requests.post(self.oli.graphql, json={"query": query, "variables": variables}, headers=self.headers)
         
         if response.status_code == 200:
             if expand_json:
@@ -154,3 +153,90 @@ class GraphQLClient:
             expanded_data.append(expanded_row)
         
         return {'data': {'attestations': expanded_data}}
+
+    def graphql_query_trust_lists(self) -> dict:
+        """
+        Query trust lists from the EAS GraphQL API based on the specified filters.
+
+        Returns:
+            dict: JSON response containing matching trust list data
+        """
+        query = """
+            query Attestations($take: Int, $where: AttestationWhereInput, $orderBy: [AttestationOrderByWithRelationInput!]) {
+                attestations(take: $take, where: $where, orderBy: $orderBy) {
+                    attester
+                    decodedDataJson
+                    expirationTime
+                    id
+                    ipfsHash
+                    isOffchain
+                    recipient
+                    refUID
+                    revocable
+                    revocationTime
+                    revoked
+                    time
+                    timeCreated
+                    txid
+                }
+            }
+        """
+            
+        variables = {
+            "where": {
+                "schemaId": {
+                    "equals": self.oli.oli_label_trust_schema
+                }
+            },
+            "orderBy": [
+                {
+                    "timeCreated": "desc"
+                }
+            ]
+        }
+
+        response = requests.post(self.oli.graphql, json={"query": query, "variables": variables}, headers=self.headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(f"GraphQL query failed with status code {response.status_code}: {response.text}")
+
+    def create_trust_list_dict(self, attestations_data: dict) -> dict:
+        """
+        Expand trust list attestations into a dict.
+        
+        Args:
+            attestations_data (dict): GraphQL response from oli.graphql_query_trust_lists()
+        
+        Returns:
+            dict: dictionary with attester as key and trusted/untrusted lists as values
+        """
+        expanded_data = {}
+
+        for row in attestations_data['data']['attestations']:
+
+            attester = row['attester']
+
+            # Check if decodedDataJson exists and is not None
+            if 'decodedDataJson' in row and row['decodedDataJson']:
+                try:
+                    # Parse the JSON string
+                    if isinstance(row['decodedDataJson'], str):
+                        decoded_data = json.loads(row['decodedDataJson'])
+                    else:
+                        decoded_data = row['decodedDataJson']
+                
+                    # attestations are order by time desc, therefore only take the latest attestation of each attester
+                    if attester not in expanded_data:
+                        expanded_data[attester] = {
+                            'owner': decoded_data[0]['value']['value'],
+                            'trusted': json.loads(decoded_data[1]['value']['value']),
+                            'untrusted': json.loads(decoded_data[2]['value']['value'])
+                        }
+                
+                # catch all errors & add error message instead of data to the dict
+                except:
+                    expanded_data[attester] = "Error parsing decodedDataJson"
+
+        return expanded_data
