@@ -1,3 +1,4 @@
+from certifi import where
 import requests
 import json
 
@@ -14,6 +15,8 @@ class GraphQLClient:
             "Content-Type": "application/json"
         }
     
+    ### Attestations ###
+
     def graphql_query_attestations(self, address: str=None, attester: str=None, timeCreated: int=None, revocationTime: int=None, take: int=None, id: str=None, expand_json: bool=True) -> dict:
         """
         Queries attestations from the EAS GraphQL API based on the specified filters.
@@ -153,10 +156,47 @@ class GraphQLClient:
             expanded_data.append(expanded_row)
         
         return {'data': {'attestations': expanded_data}}
+    
+    def graphql_query_attestations_distinct(self, field: str) -> dict:
+        """
+        Queries distinct values for a specified field from the EAS GraphQL API.
+        
+        Args:
+            field (str): The field to retrieve distinct values for (e.g., "attester", "recipient")
+        
+        Returns:
+            dict: JSON response containing distinct values for the specified field
+        """
+        query = """
+            query Attestations($where: AttestationWhereInput, $distinct: [AttestationScalarFieldEnum!]) {
+                attestations(where: $where, distinct: $distinct) {
+                    %s
+                }
+            }
+        """ % field
+        variables = {
+            "where": {
+                "schemaId": {
+                    "equals": self.oli.oli_label_pool_schema
+                }
+            },
+            "distinct": [field]
+        }
+
+        response = requests.post(self.oli.graphql, json={"query": query, "variables": variables}, headers=self.headers)
+
+        if response.status_code == 200:
+            return [a[field] for a in response.json()['data']['attestations']]
+        else:
+            raise Exception(
+                f"GraphQL query failed with status code {response.status_code}: {response.text}"
+            )
+
+    ### Trust Lists ###
 
     def graphql_query_trust_lists(self) -> dict:
         """
-        Query trust lists from the EAS GraphQL API based on the specified filters.
+        Query trust lists from the EAS GraphQL API based on the specified filters. Disregards revoked trust lists.
 
         Returns:
             dict: JSON response containing matching trust list data
@@ -166,18 +206,11 @@ class GraphQLClient:
                 attestations(take: $take, where: $where, orderBy: $orderBy) {
                     attester
                     decodedDataJson
-                    expirationTime
                     id
                     ipfsHash
-                    isOffchain
-                    recipient
-                    refUID
-                    revocable
-                    revocationTime
-                    revoked
+                    txid
                     time
                     timeCreated
-                    txid
                 }
             }
         """
@@ -186,6 +219,9 @@ class GraphQLClient:
             "where": {
                 "schemaId": {
                     "equals": self.oli.oli_label_trust_schema
+                },
+                "revoked": {
+                    "equals": False
                 }
             },
             "orderBy": [
@@ -204,7 +240,7 @@ class GraphQLClient:
 
     def create_trust_list_dict(self, attestations_data: dict) -> dict:
         """
-        Expand trust list attestations into a dict.
+        Expand trust list attestations into a dict. In case one EOA attested multiple trust lists, only the latest one is taken into account.
         
         Args:
             attestations_data (dict): GraphQL response from oli.graphql_query_trust_lists()
@@ -230,9 +266,9 @@ class GraphQLClient:
                     # attestations are order by time desc, therefore only take the latest attestation of each attester
                     if attester not in expanded_data:
                         expanded_data[attester] = {
-                            'owner': decoded_data[0]['value']['value'],
-                            'trusted': json.loads(decoded_data[1]['value']['value']),
-                            'untrusted': json.loads(decoded_data[2]['value']['value'])
+                            'owner_name': decoded_data[0]['value']['value'],
+                            'attesters': json.loads(decoded_data[1]['value']['value']),
+                            'attestations': json.loads(decoded_data[2]['value']['value'])
                         }
                 
                 # catch all errors & add error message instead of data to the dict
@@ -240,3 +276,38 @@ class GraphQLClient:
                     expanded_data[attester] = "Error parsing decodedDataJson"
 
         return expanded_data
+    
+    def graphql_query_trust_lists_distinct(self, field: str) -> dict:
+        """
+        Queries distinct values for a specified field from the EAS GraphQL API.
+        
+        Args:
+            field (str): The field to retrieve distinct values for (e.g., "attester", "recipient")
+        
+        Returns:
+            dict: JSON response containing distinct values for the specified field
+        """
+        query = """
+            query Attestations($where: AttestationWhereInput, $distinct: [AttestationScalarFieldEnum!]) {
+                attestations(where: $where, distinct: $distinct) {
+                    %s
+                }
+            }
+        """ % field
+        variables = {
+            "where": {
+                "schemaId": {
+                    "equals": self.oli.oli_label_trust_schema
+                }
+            },
+            "distinct": [field]
+        }
+
+        response = requests.post(self.oli.graphql, json={"query": query, "variables": variables}, headers=self.headers)
+
+        if response.status_code == 200:
+            return [a[field] for a in response.json()['data']['attestations']]
+        else:
+            raise Exception(
+                f"GraphQL query failed with status code {response.status_code}: {response.text}"
+            )

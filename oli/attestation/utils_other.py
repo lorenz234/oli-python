@@ -66,7 +66,7 @@ class UtilsOther:
             tx_params (dict): Transaction parameters with estimated 'gas' field
         """
         try:
-            if gas_limit == 0:
+            if gas_limit == -1:
                 # Estimate gas with a buffer (e.g., 10% more than the estimate)
                 estimated_gas = function.estimate_gas(tx_params)
                 tx_params["gas"] = int(estimated_gas * 1.1)  # Add 10% buffer

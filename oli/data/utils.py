@@ -1,4 +1,6 @@
+import json
 import pandas as pd
+import networkx as nx
 
 class UtilsData:
     def __init__(self, oli_client):
@@ -10,52 +12,60 @@ class UtilsData:
         """
         self.oli = oli_client
 
-    def filter_labels(self, df, attester=None, chain_id=None, tag_id=None):
-        if attester and attester != '*':
-            df = df[df['attester'] == attester]
-        if chain_id and chain_id != '*':
-            df = df[df['chain_id'] == chain_id]
-        if tag_id and tag_id != '*':
-            df = df[df['tag_id'] == tag_id]
-        return df
-
-    def filter_labels_by_trust_list(self, df: pd.DataFrame, trusted: list, untrusted: list, min_score: int, show_revoked: bool) -> pd.DataFrame:
+    #### STILL NEEDED????
+    def turn_attestations_into_df(self, attestations: list) -> pd.DataFrame:
         """
-        Filter labels based on a trust list.
+        Turn a list of attestations into a pandas DataFrame.
         
         Args:
-            df (pd.DataFrame): DataFrame of labels to filter
-            trusted (list): List of trusted rules
-            untrusted (list): List of untrusted rules
-            threshold (int): Minimum score threshold to keep a label
+            attestations (list): List of attestation dictionaries
+            
+        Returns:
+            pd.DataFrame: DataFrame of attestations
+        """
+        df = pd.DataFrame(data=attestations)
+        df = df[['attester', 'recipient', 'chain_id', 'tags_json', 'time', 'timeCreated']]
+
+        # Parse JSON strings into dictionaries
+        df['tags_json'] = df['tags_json'].apply(json.loads)
+
+        # Expand each tag_id:value pair into separate rows
+        tags_list = []
+        for idx, row in df.iterrows():
+            for tag_id, value in row['tags_json'].items():
+                tags_list.append({
+                    **row.drop('tags_json').to_dict(),
+                    'tag_id': tag_id,
+                    'value': value
+                })
+
+        df = pd.DataFrame(tags_list)
+        return df
+    
+    # get confidence scores
+    def get_confidence(self, attester: str, tag_id: str, chain_id: str) -> float:
+        """
+        Get the confidence score for a given attester, tag_id and chain_id from the trust table.
+
+        Args:
+            attester (str): Attester address
+            tag_id (str): Tag ID
+            chain_id (str): Chain ID
         
         Returns:
-            pd.DataFrame: Filtered DataFrame of labels
+            float: Confidence score or -1 if no score was able to be assigned
         """
-        df['score'] = 0
+        # raise ValueError if trust table is empty
+        if self.oli.trust.trust_table == {}:
+            raise ValueError("Trust table is empty. Please use 'oli.set_trust_node(source_address)' function to set the source node, which will compute your trust table.")
 
-        # Apply trusted rules
-        for rule in trusted:
-            # Apply attestation scores
-            if 'attestation' in rule:
-                df.loc[df['id'] == rule['attestation'], 'score'].apply(lambda x: max(x, rule['score']))
-            elif 'attester' in rule:
-                # Apply attester base score
-                if 'score' in list(rule):
-                    df.loc[self.filter_labels(df, attester=rule['attester']).index, 'score'] = df.loc[self.filter_labels(df, attester=rule['attester']).index, 'score'].apply(lambda x: max(x, rule['score']))
-                # Apply filter specific scores
-                if 'filters' in list(rule):
-                    for filter in rule['filters']:
-                        df.loc[self.filter_labels(df, attester=filter.get('attester'), chain_id=filter.get('chain_id'), tag_id=filter.get('tag_id')).index, 'score'] = df.loc[self.filter_labels(df, attester=filter.get('attester'), chain_id=filter.get('chain_id'), tag_id=filter.get('tag_id')).index, 'score'].apply(lambda x: max(x, filter['score']))
-
-        # Apply untrusted rules
-        ### TODO
-
-        # remove all rows below a certain score threshold & return
-        df = df[df['score'] >= min_score]
-
-        # remove revoked if not wanted
-        if show_revoked is False:
-            df = df[df['revoked'] == False]
-
-        return df
+        # Checksum the attester address
+        attester = attester.lower()
+        
+        # Iterate through self.oli.trust.trust_table in order (is sorted by confidence)
+        for (t_attester, t_tag, t_chain), confidence in self.oli.trust.trust_table.items():
+            # Check if this entry matches (with wildcard support)
+            if (t_attester.lower() == attester and (t_tag == tag_id or t_tag == '*') and (t_chain == chain_id or t_chain == '*')):
+                return confidence
+        
+        return -1

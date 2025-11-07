@@ -1,5 +1,5 @@
 class OnchainAttestations:
-    def __init__(self, oli_client):
+    def __init__(self, oli_client, private_key: str):
         """
         Initialize OnchainAttestations with an OLI client.
         
@@ -7,8 +7,9 @@ class OnchainAttestations:
             oli_client: The OLI client instance
         """
         self.oli = oli_client
+        self.__private_key = private_key
     
-    def submit_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=0) -> tuple[str, str]:
+    def submit_onchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", gas_limit: int=-1) -> tuple[str, str]:
         """
         Submit an OLI label as an onchain attestation to the OLI Label Pool.
         
@@ -17,17 +18,23 @@ class OnchainAttestations:
             chain_id (str): Chain ID in CAIP-2 format where the address/contract resides
             tags (dict): OLI compliant tags as a dict  information (name, version, etc.)
             ref_uid (str): Reference UID
-            gas_limit (int): Gas limit for the transaction. If set to 0, the function will estimate the gas limit.
+            gas_limit (int): Gas limit for the transaction. If set to -1, the function will estimate the gas limit.
             
         Returns:
             str: Transaction hash
             str: UID of the attestation
         """
-        # fix simple formatting errors in tags
-        tags = self.oli.validator.fix_simple_tags_formatting(tags)
+        # in case tag definition fails to load, skip tag formatting and validation
+        if self.oli.tag_definitions is not None:
 
-        # Check all necessary input parameters
-        self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
+            # fix simple formatting errors in tags
+            tags = self.oli.validator.fix_simple_tags_formatting(tags)
+
+            # Check all necessary input parameters
+            self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
+
+        else:
+            print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
 
         # Encode the label data
         data = self.oli.utils_other.encode_label_data(chain_id, tags)
@@ -59,7 +66,7 @@ class OnchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction with the private key
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.__private_key)
         
         # Send the transaction
         try:
@@ -75,8 +82,8 @@ class OnchainAttestations:
             return f"0x{txn_hash.hex()}", f"0x{txn_receipt.logs[0].data.hex()}"
         else:
             raise Exception(f"Transaction failed onchain: {txn_receipt}")
-    
-    def submit_multi_onchain_labels(self, labels: list, gas_limit: int=0) -> tuple[str, list]:
+
+    def submit_multi_onchain_labels(self, labels: list, gas_limit: int=-1) -> tuple[str, list]:
         """
         Batch submit multiple OLI labels as an onchain attestation to the OLI Label Pool.
         
@@ -86,7 +93,7 @@ class OnchainAttestations:
                 chain_id (str): Chain ID in CAIP-2 format where the address/contract resides
                 tags (dict): OLI compliant tags as a dict  information (name, version, etc.)
                 ref_uid (str): Reference UID
-            gas_limit (int): Gas limit for one transaction to submit all labels passed, make sure to set it high enough for multiple attestations! If set to 0, the function will estimate the gas limit.
+            gas_limit (int): Gas limit for one transaction to submit all labels passed, make sure to set it high enough for multiple attestations! If set to -1, the function will estimate the gas limit.
             
         Returns:
             str: Transaction hash
@@ -103,11 +110,17 @@ class OnchainAttestations:
             elif 'tags' not in label:
                 raise ValueError("tags dictionary must be provided for each label")
             
-            # fix simple formatting errors in tags
-            label['tags'] = self.oli.validator.fix_simple_tags_formatting(label['tags'])
+            # in case tag definition fails to load, skip tag formatting and validation
+            if self.oli.tag_definitions is not None:
+                
+                # fix simple formatting errors in tags
+                label['tags'] = self.oli.validator.fix_simple_tags_formatting(label['tags'])
 
-            # run checks on each label
-            self.oli.validator.validate_label_correctness(label['address'], label['chain_id'], label['tags'], auto_fix=False)
+                # run checks on each label
+                self.oli.validator.validate_label_correctness(label['address'], label['chain_id'], label['tags'], auto_fix=False)
+
+            else:
+                print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
 
             # check if ref_uid is provided
             if 'ref_uid' not in label:
@@ -149,7 +162,7 @@ class OnchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction with the private key
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.__private_key)
         
         # Send the transaction
         try:
@@ -168,23 +181,23 @@ class OnchainAttestations:
         uids = ['0x' + log.data.hex() for log in txn_receipt.logs]
 
         return f"0x{txn_hash.hex()}", uids
-        
-    def submit_onchain_trust_list(self, owner: str, trusted: dict, untrusted: dict, gas_limit: int=0) -> tuple[str, str]:
+
+    def submit_onchain_trust_list(self, owner: str, trusted: list, untrusted: list, gas_limit: int=-1) -> tuple[str, str]:
         """
         Submit an OLI trust list as an onchain attestation to the OLI Trust List Pool.
         
         Args:
             owner (str): The address of the owner of the trust list
-            trusted (dict): Dictionary of trusted addresses with reasons as values
-            untrusted (dict): Dictionary of untrusted addresses with reasons as values
-            gas_limit (int): Gas limit for the transaction. If set to 0, the function will estimate the gas limit.
+            trusted (list): List of dictionaries containing trusted addresses
+            untrusted (list): List of dictionaries containing untrusted addresses
+            gas_limit (int): Gas limit for the transaction. If set to -1, the function will estimate the gas limit.
 
         Returns:
             str: Transaction hash
             str: UID of the attestation
         """
         # Validate the trust list
-        self.oli.validator.validate_list_correctness(owner, trusted, untrusted)
+        self.oli.validator.validate_trust_list_correctness(owner, trusted, untrusted)
 
         # Encode the label data
         data = self.oli.utils_other.encode_list_data(owner, trusted, untrusted)
@@ -216,7 +229,7 @@ class OnchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction with the private key
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.__private_key)
         
         # Send the transaction
         try:
@@ -266,7 +279,7 @@ class OnchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.__private_key)
 
         # Send the transaction
         try:
@@ -321,7 +334,7 @@ class OnchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.__private_key)
 
         # Send the transaction
         txn_hash = self.oli.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
@@ -331,6 +344,6 @@ class OnchainAttestations:
         
         # Check if the transaction was successful
         if txn_receipt.status == 1:
-            return f"0x{txn_hash.hex()}", len(uids)
+            return f"0x{txn_hash.hex()}"
         else:
             raise Exception(f"Transaction failed: {txn_receipt}")
