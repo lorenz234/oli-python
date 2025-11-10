@@ -15,6 +15,12 @@ class UtilsValidator:
             'bip122:',  # Bitcoin
             'SN_MAIN'   # Starknet
         ]
+        # URLs for helpful resources
+        self.url_1_label_schema = "https://github.com/openlabelsinitiative/OLI/tree/main/1_label_schema"
+        self.url_2_label_pool = "https://github.com/openlabelsinitiative/OLI/tree/main/2_label_pool"
+        self.url_3_label_trust = "https://github.com/openlabelsinitiative/OLI/tree/main/3_label_trust"
+        self.url_tag_definitions = "https://github.com/openlabelsinitiative/OLI/blob/main/1_label_schema/tags/tag_definitions.yml"
+        self.url_caip2_format = "https://docs.portalhq.io/resources/chain-id-formatting"
 
     def fix_simple_tags_formatting(self, tags: dict) -> dict:
         """
@@ -54,7 +60,7 @@ class UtilsValidator:
 
     def validate_label_correctness(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", auto_fix: bool=True) -> bool:
         """
-        Validates if the label is compliant with the OLI Data Model. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI
+        Validates if the label is compliant with the OLI Label Schema. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI/tree/main/1_label_schema
         
         Args:
             address (str): Address to check
@@ -72,7 +78,29 @@ class UtilsValidator:
         self.validate_tags(tags, auto_fix=auto_fix)
         self.validate_ref_uid(ref_uid)
         return True
-        
+
+    def validate_trust_list_correctness(self, owner_name: str, attesters: list, attestations: list) -> bool:
+        """
+        Validates if the trust list is compliant with the OLI Label Trust definitions. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI/tree/main/3_label_trust
+
+        Args:
+            owner (str): Owner name of the trust list
+            attesters (list): List of attester information with confidence scores and optional filters
+            attestations (list): List of attestation information with confidence scores
+
+        Returns:
+            bool: True if the trust list is correct, False otherwise
+        """
+        if owner_name.isascii() != True:
+            print(owner_name)
+            raise ValueError("Owner name must only contain ASCII characters")
+        elif len(owner_name) < 3 or len(owner_name) > 100:
+            print(owner_name)
+            raise ValueError("Owner name must be between 3 and 100 characters long")
+        self.validate_attesters_list(attesters)
+        self.validate_attestations_list(attestations)
+        return True
+
     def validate_chain_id(self, chain_id: str) -> bool:
         """
         Validates if chain_id for a label is in CAIP-2 format.
@@ -101,7 +129,7 @@ class UtilsValidator:
         
         # If we get here, the chain_id didn't match any allowed format
         print(f"Unsupported chain ID format: {chain_id}")
-        raise ValueError("Chain ID must be in CAIP-2 format (e.g., Base -> 'eip155:8453'), see this guide on CAIP-2: https://docs.portalhq.io/resources/chain-id-formatting")
+        raise ValueError(f"Chain ID must be in CAIP-2 format (e.g., Base -> 'eip155:8453'), see this guide on CAIP-2: {self.url_caip2_format}")
 
     def validate_address(self, address: str) -> bool:
         """
@@ -137,14 +165,14 @@ class UtilsValidator:
                 pass
         else:
             print(tags)
-            raise ValueError("Tags must be a dictionary with OLI compliant tags (e.g., {'contract_name': 'example', 'is_eoa': True})")
+            raise ValueError(f"Tags must be a dictionary with OLI compliant tags (e.g., {{'contract_name': 'example', 'is_eoa': True}}). See for example: {self.url_1_label_schema}")
         
         # Check each tag_id in the dictionary # TODO: redo this with tag_definitions 2.0 and schema, should be more efficient
         for tag_id in tags.keys():
             
             # Check if the tag_id is in the official OLI tag list
             if tag_id not in self.oli.tag_ids:
-                print(f"WARNING: Tag tag_id '{tag_id}' is not an official OLI tag. Please check 'oli.tag_definitions' or https://github.com/openlabelsinitiative/OLI/blob/main/1_label_schema/tags/tag_definitions.yml.")
+                print(f"WARNING: Tag tag_id '{tag_id}' is not an official OLI tag. Please check 'oli.tag_definitions' or {self.url_tag_definitions}.")
             
             # Check if the tag_id is in the correct format. So far implemented [boolean, string, integer, list, float, string(42), string(66), date (YYYY-MM-DD HH:MM:SS)]
             else:
@@ -212,4 +240,114 @@ class UtilsValidator:
             return True
         else:
             print(ref_uid)
-            raise ValueError("Ref_uid must be a valid UID in hex format, leave empty if not used")
+            raise ValueError("Ref_uid must be a valid UID in hex format")
+
+    def validate_attesters_list(self, attesters: list) -> bool:
+        """
+        Validates if the attester list is in the correct format.
+
+        Args:
+            attesters (list): Attester list to check
+
+        Returns:
+            bool: True if correct, throws error otherwise
+        """
+        if not isinstance(attesters, list):
+            raise ValueError("Attesters list must be a list.")
+
+        for item in attesters:
+            # Validate attester
+            if 'address' in item:
+                # check attester address
+                self.validate_address(item['address'])
+                # Check attester item
+                self.validate_attester_item(item)
+            else:
+                print(item)
+                raise ValueError(f"Each attester entry must have an 'address' key. See for example: {self.url_3_label_trust}")
+
+        return True
+
+    def validate_attestations_list(self, attestations: list) -> bool:
+        """
+        Validates if the attestations list is in the correct format.
+
+        Args:
+            untrusted (list): Untrusted list to check
+
+        Returns:
+            bool: True if correct, throws error otherwise
+        """
+        if not isinstance(attestations, list):
+            raise ValueError("Attestations list must be a list.")
+
+        for item in attestations:
+            # Validate attestation
+            if 'uid' in item:
+                # check attestation UID
+                self.validate_ref_uid(item['uid'])
+                # check attestation item
+                self.validate_attestation_item(item)
+            else:
+                print(item)
+                raise ValueError(f"Each attestation entry must have an 'uid' key. See for example: {self.url_3_label_trust}")
+
+        return True
+
+    def validate_attester_item(self, item: dict) -> bool:
+        """
+        Validates if an attester item is in the correct format.
+        
+        Args:
+            item (dict): Attester item to check
+
+        Returns:
+            bool: True if valid, throws error otherwise
+        """
+        # Check if confidence key is present
+        if 'confidence' in item:
+            if 'filters' in item:
+                # if 'confidence' is assigned to an attester, then specific confidence scores based on 'filters' are not allowed
+                print(item)
+                raise ValueError(f"If a 'confidence' key is assigned to an attester, specific confidence scores based on 'filters' are not allowed. Please remove 'filters'. See for example: {self.url_3_label_trust}")
+            elif item['confidence'] < 0 or item['confidence'] > 1:
+                print(item)
+                raise ValueError("'confidence' scores must be between 0 and 1")
+        elif 'filters' in item:
+            # make sure tag_id or chain_id is present in each entry in filters
+            if isinstance(item['filters'], list):
+                for tag in item['filters']:
+                    if 'tag_id' not in tag and 'chain_id' not in tag:
+                        print(item['filters'])
+                        raise ValueError(f"Each filter must have a at least a key for 'tag_id' or 'chain_id'. See for example: {self.url_3_label_trust}")
+                    elif 'confidence' not in tag:
+                        print(item['filters'])
+                        raise ValueError(f"Each filter must have a key called 'confidence'. See for example: {self.url_3_label_trust}")
+                    elif tag['confidence'] < 0 or tag['confidence'] > 1:
+                        print(item['filters'])
+                        raise ValueError("Each 'confidence' score must be between 0 and 1")
+            else:
+                print(item['filters'])
+                raise ValueError(f"'filters' must be a list of dictionaries with 'tag_id' or 'chain_id' filters and a 'confidence' score between 0 and 1. See for example: {self.url_3_label_trust}")
+        else:
+            print(item)
+            raise ValueError(f"Each attester entry must have either have a 'confidence' or 'filters' key. See for example: {self.url_3_label_trust}")
+        return True
+
+    def validate_attestation_item(self, item: dict) -> bool:
+        """
+        Validates if an attestation item is in the correct format.
+
+        Args:
+            item (dict): Attestation item to check
+
+        Returns:
+            bool: True if valid, throws error otherwise
+        """
+        if 'confidence' not in item:
+            print(item)
+            raise ValueError(f"Each attestation entry with a 'uid' key must also have a 'confidence' key. See for example: {self.url_3_label_trust}")
+        elif item['confidence'] < 0 or item['confidence'] > 1:
+            print(item)
+            raise ValueError(f"Confidence must be between 0 and 1.")
+        return True

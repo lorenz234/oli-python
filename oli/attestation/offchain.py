@@ -5,7 +5,7 @@ import json
 from requests import Response
 
 class OffchainAttestations:
-    def __init__(self, oli_client):
+    def __init__(self, oli_client, private_key: str):
         """
         Initialize OffchainAttestations with an OLI client.
         
@@ -13,6 +13,7 @@ class OffchainAttestations:
             oli_client: The OLI client instance
         """
         self.oli = oli_client
+        self._private_key = private_key
     
     def submit_offchain_label(self, address: str, chain_id: str, tags: dict, ref_uid: str="0x0000000000000000000000000000000000000000000000000000000000000000", retry: int=4):
         """
@@ -28,12 +29,18 @@ class OffchainAttestations:
         Returns:
             dict: API request response
         """
-        # fix simple formatting errors in tags
-        tags = self.oli.validator.fix_simple_tags_formatting(tags)
+        # in case tag definition fails to load, skip tag formatting and validation
+        if self.oli.tag_definitions is not None:
 
-        # Check all necessary input parameters
-        self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
-        
+            # fix simple formatting errors in tags
+            tags = self.oli.validator.fix_simple_tags_formatting(tags)
+
+            # Check all necessary input parameters
+            self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
+
+        else:
+            print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
+
         # Encode the label data
         data = self.oli.utils_other.encode_label_data(chain_id, tags)
         
@@ -44,57 +51,149 @@ class OffchainAttestations:
             data=data, 
             ref_uid=ref_uid
         )
-        
-        # Post to the API & retry if status code is not 200
-        response = self.post_offchain_attestation(attestation)
-        n0 = retry
-        while response.status_code != 200 and retry > 0:
-            retry -= 1
-            time.sleep(2 ** (n0 - retry)) # exponential backoff
-            # rebuild the attestation (assigns new timestamp) to not get rate limited by EAS post endpoint
-            attestation = self.build_offchain_attestation(
-                recipient=address, 
-                schema=self.oli.oli_label_pool_schema, 
-                data=data, 
-                ref_uid=ref_uid
-            )
-            response = self.post_offchain_attestation(attestation)
-        
-        # if it fails after all retries, raise an error
-        if response.status_code != 200:
-            raise Exception(f"Failed to submit offchain attestation to EAS API ipfs post endpoint after {n0} retries: {response.status_code} - {response.text}")
 
-        return response
-    
-    def post_offchain_attestation(self, attestation: dict, filename: str="OLI.txt") -> Response:
-        """
-        Post API an attestation to the EAS API.
-        
-        Args:
-            attestation (dict): The attestation package
-            filename (str): Custom filename
-            
-        Returns:
-            dict: API response
-        """
         # Convert numerical values to strings for JSON serialization
         attestation["sig"]["message"]["time"] = str(attestation["sig"]["message"]["time"])
         attestation["sig"]["message"]["expirationTime"] = str(attestation["sig"]["message"]["expirationTime"])
         attestation["sig"]["domain"]["chainId"] = str(attestation["sig"]["domain"]["chainId"])
         
-        # Prepare payload for the API endpoint
-        payload = {
-            "filename": filename,
-            "textJson": json.dumps(attestation, separators=(',', ':'))
-        }
+        # extract uid
+        uid = attestation["sig"]["uid"]
+
+        # Post to the API & retry if status code is not 200
+        response = self.oli.api.post_single_attestation(attestation)
+        n0 = retry
+        while response.status_code != 200 and retry > 0:
+            retry -= 1
+            time.sleep(2 ** (n0 - retry)) # exponential backoff
+            response = self.oli.api.post_single_attestation(attestation)
         
-        headers = {
-            "Content-Type": "application/json"
-        }
+        # if it fails after all retries, raise an error
+        if response.status_code != 200:
+            raise Exception(f"Failed to submit offchain attestation label to OLI API post endpoint 'attestation' after {n0} retries: {response.status_code} - {response.text}")
+
+        return response, uid
+    
+    def submit_offchain_labels_bulk(self, attestations: list, retry: int=4) -> dict:
+        """
+        Submit up to 1000 OLI labels as offchain attestations to the OLI Label Pool in bulk.
         
-        # Post the data to the API
-        response = requests.post(self.oli.eas_api_url, json=payload, headers=headers)
-        return response
+        Args:
+            attestations (list): List of attestation objects (1-1000 items), each containing address, chain_id, tags (and optional ref_uid)
+            retry (int): Number of retries for the API post request to EAS ipfs
+
+        Returns:
+            dict: API request response
+        """
+        signed_attestations = []
+        uids = []
+
+        for attestation in attestations:
+            address = attestation.get("address")
+            chain_id = attestation.get("chain_id")
+            tags = attestation.get("tags", None) # no tags means no attestation will be created
+            ref_uid = attestation.get("ref_uid", "0x0000000000000000000000000000000000000000000000000000000000000000")
+
+            if tags is not None:
+
+                # in case tag definition fails to load, skip tag formatting and validation
+                if self.oli.tag_definitions is not None:
+
+                    # fix simple formatting errors in tags
+                    tags = self.oli.validator.fix_simple_tags_formatting(tags)
+
+                    # Check all necessary input parameters
+                    self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
+
+                else:
+                    print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
+        
+                # Encode the label data
+                data = self.oli.utils_other.encode_label_data(chain_id, tags)
+        
+                # Build the attestation
+                attestation = self.build_offchain_attestation(
+                    recipient=address, 
+                    schema=self.oli.oli_label_pool_schema, 
+                    data=data, 
+                    ref_uid=ref_uid
+                )
+
+                # Convert numerical values to strings for JSON serialization
+                attestation["sig"]["message"]["time"] = str(attestation["sig"]["message"]["time"])
+                attestation["sig"]["message"]["expirationTime"] = str(attestation["sig"]["message"]["expirationTime"])
+                attestation["sig"]["domain"]["chainId"] = str(attestation["sig"]["domain"]["chainId"])
+        
+                # extract uid
+                uid = attestation["sig"]["uid"]
+                uids.append(uid)
+
+                signed_attestations.append(attestation)
+        
+        # Post to the API & retry if status code is not 200
+        response = self.oli.api.post_bulk_attestations(signed_attestations)
+        n0 = retry
+        while response.status_code != 200 and retry > 0:
+            retry -= 1
+            time.sleep(2 ** (n0 - retry)) # exponential backoff
+            response = self.oli.api.post_bulk_attestations(signed_attestations)
+        
+        # if it fails after all retries, raise an error
+        if response.status_code != 200:
+            raise Exception(f"Failed to submit offchain attestation labels bulk to OLI API post endpoint 'attestation/bulk' after {n0} retries: {response.status_code} - {response.text}")
+
+        return response, uids
+
+    def submit_offchain_trust_list(self, owner_name: str='', attesters: list=[], attestations: list=[], retry: int=4) -> dict:
+        """
+        Submit an OLI trust list as an offchain attestation to the OLI Trust List Pool.
+        
+        Args:
+            owner (str): The address of the owner of the trust list
+            attesters (list): List of dictionaries containing attester information with trust scores and optional filters
+            attestations (list): List of dictionaries containing attestation information with trust scores
+            retry (int): Number of retries for the API post request to EAS ipfs
+
+        Returns:
+            dict: API request response
+        """
+        # Validate the trust list
+        self.oli.validator.validate_trust_list_correctness(owner_name, attesters, attestations)
+
+        # Encode the label data
+        data = self.oli.utils_other.encode_list_data(owner_name, attesters, attestations)
+
+        # Build the attestation
+        recipient = "0x0000000000000000000000000000000000000000"
+        ref_uid = "0x0000000000000000000000000000000000000000000000000000000000000000"
+        attestation = self.build_offchain_attestation(
+            recipient=recipient, 
+            schema=self.oli.oli_label_trust_schema, 
+            data=data, 
+            ref_uid=ref_uid
+        )
+
+        # Convert numerical values to strings for JSON serialization
+        attestation["sig"]["message"]["time"] = str(attestation["sig"]["message"]["time"])
+        attestation["sig"]["message"]["expirationTime"] = str(attestation["sig"]["message"]["expirationTime"])
+        attestation["sig"]["domain"]["chainId"] = str(attestation["sig"]["domain"]["chainId"])
+
+        # extract uid
+        uid = attestation["sig"]["uid"]
+
+        # Post to the API & retry if status code is not 200
+        response = self.oli.api.post_trust_list(attestation)
+        n0 = retry
+        while response.status_code != 200 and retry > 0:
+            retry -= 1
+            time.sleep(2 ** (n0 - retry)) # exponential backoff
+            response = self.oli.api.post_trust_list(attestation)
+        
+        # if it fails after all retries, raise an error
+        if response.status_code != 200:
+            raise Exception(f"Failed to submit offchain attestation trust list to OLI API post endpoint 'trust-list' after {n0} retries: {response.status_code} - {response.text}")
+
+        return response, uid
     
     def build_offchain_attestation(self, recipient: str, schema: str, data: str, ref_uid: str, revocable: bool=True, expiration_time: int=0) -> dict:
         """
@@ -217,7 +316,7 @@ class OffchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self._private_key)
 
         # Send the transaction
         try:
@@ -265,7 +364,7 @@ class OffchainAttestations:
         transaction = function.build_transaction(tx_params)
 
         # Sign the transaction
-        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self.oli.private_key)
+        signed_txn = self.oli.w3.eth.account.sign_transaction(transaction, private_key=self._private_key)
 
         # Send the transaction
         txn_hash = self.oli.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
@@ -275,6 +374,6 @@ class OffchainAttestations:
         
         # Check if the transaction was successful
         if txn_receipt.status == 1:
-            return f"0x{txn_hash.hex()}", len(uids)
+            return f"0x{txn_hash.hex()}"
         else:
             raise Exception(f"Transaction failed: {txn_receipt}")

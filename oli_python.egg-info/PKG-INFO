@@ -1,10 +1,10 @@
 Metadata-Version: 2.4
 Name: oli-python
-Version: 1.2.1
+Version: 2.0.0
 Summary: Python SDK for interacting with the Open Labels Initiative; A standard, registry and trust layer for EVM address labels.
 Home-page: https://github.com/openlabelsinitiative/oli-python
 Author: Lorenz Lehmann
-Author-email: lorenz@growthepie.xyz
+Author-email: lorenz@growthepie.com
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
@@ -25,9 +25,11 @@ Dynamic: requires-dist
 Dynamic: requires-python
 Dynamic: summary
 
-# OLI Python Package
+# OLI Python SDK
 
-Python SDK for interacting with the Open Labels Initiative; A framework for address labels in the blockchain space. Read & write labels into the OLI Label Pool, check your labels for OLI compliance.
+**`oli-python`** is the official Python SDK for the **[Open Labels Initiative (OLI)](https://github.com/openlabelsinitiative/OLI)**, a framework for standardized and trusted blockchain address labels.
+
+This SDK lets you read, write, validate, and revoke address labels within the **OLI Label Pool** and compute confidence scores based on attesters' relationships within the **OLI Label Trust**.
 
 ## Installation
 
@@ -35,96 +37,217 @@ Python SDK for interacting with the Open Labels Initiative; A framework for addr
 pip install oli-python
 ```
 
-### Submitting New Labels
+## Initialization
 
 ```python
 from oli import OLI
 import os
 
 # Initialize the client
-# Make sure to pull in your private key from an .env file
-oli = OLI(private_key=os.environ['OLI_PRIVATE_KEY'], is_production=True)
+oli = OLI(
+    private_key=os.getenv("PRIVATE_KEY"),
+    api_key=os.getenv("OLI_API_KEY")
+)
+```
 
-# Create a label
+**Setup Instructions:**
+* Create a `.env` file to store your private variables
+* Load an EOA wallet by setting the `private_key` variable
+* The EOA wallet is used to track your reputation within OLI
+* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](http://openlabelsinitiative.org/developer)**
+
+**Additional Options:**
+
+You can also set the `chain` parameter to specify which EAS contracts location to use and the `custom_rpc_url` variable when initializing.
+
+## Submit Labels into the OLI Label Pool
+
+### Single Attestation
+
+```python
+# Define your OLI compliant attestation
 address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2"
-chain_id = "eip155:1" # Ethereum Mainnet
+chain_id = "eip155:1"  # Ethereum mainnet
 tags = {
     "contract_name": "growthepie donation address",
     "is_eoa": True,
-    "owner_project": "growthepie"
+    "owner_project": "growthepie",
 }
 
-# Validate if your label is OLI compliant
-possible_to_attest = oli.validate_label_correctness(address, chain_id, tags)
-print(f"You can attest your label: {possible_to_attest}")
+# (Optional) Validate your attestation before submission
+is_valid = oli.validate_label(address, chain_id, tags)
+print("Your attestation is OLI compliant:", is_valid)
 
-# Submit a label as an offchain attestation
-response = oli.submit_offchain_label(address, chain_id, tags)
-print(f"Label submitted offchain with response: {response.text}")
-
-# Submit a label as an onchain attestation
-tx_hash, uid = oli.submit_onchain_label(address, chain_id, tags)
-print(f"Label submitted onchain with hash: {tx_hash} and uid: {uid}")
-
-# Batch submit multiple labels as one onchain attestation
-labels = [
-    {'address': address, 'chain_id': chain_id, 'tags': tags},
-    {'address': address, 'chain_id': chain_id, 'tags': tags}
-]
-tx_hash, uids = oli.submit_multi_onchain_labels(labels)
-print(f"Labels batch submitted onchain with transaction hash: {tx_hash} and uids: {uids}")
-
-# Revoke an attestation (revoking onchain attestations here)
-trx_hash = oli.revoke_attestation(uid, onchain=True)
-print(f"Label {uid} revoked with hash: {trx_hash}")
-
-# Revoke multiple attestations (revoking onchain attestations here)
-trx_hash, count = oli.multi_revoke_attestations(uids, onchain=True)
-print(f"Labels batch revoked with hash: {trx_hash}")
-
+# Submit label to the OLI Label Pool
+response = oli.submit_label(address, chain_id, tags)
+print(response)
 ```
 
-### Querying Existing Labels
+### Bulk Attestation
 
 ```python
-from oli import OLI
-import os
+attestations = [
+    {"address": address, "chain_id": chain_id, "tags": tags},
+    {"address": address, "chain_id": chain_id, "tags": tags},
+]
 
-# Initialize the client (read mode only doesn't require a private key)
-oli = OLI()
+response = oli.submit_label_bulk(attestations)
+print(response)
+```
 
-# Query attestations for a specific address
-result = oli.graphql_query_attestations(address=address)
-print(result)
+## Revoke Attestations
 
-# Download parquet export of raw attestations
+**Note:** All revocations are onchain transactions and therefore require you to have ETH on Base for gas in your wallet.
+
+```python
+# Revoke a single attestation
+oli.revoke_by_uid(uid="0x...")
+
+# Bulk revocation
+uids = ["0x1...", "0x2..."]
+oli.revoke_bulk_by_uids(uids)
+```
+
+## Reading the OLI Label Pool
+
+### Get Raw Attestations
+
+```python
+response = oli.get_attestations()
+print(response)
+```
+
+**Available filters:** uid, attester, recipient, schema_info, since, order, limit
+
+### Get Labels for an Address
+
+```python
+# All labels for an address
+response = oli.get_labels(address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2")
+print(response)
+```
+
+**Available filters:** address, chain_id, limit, include_all
+
+### Bulk Get Labels for Addresses
+
+```python
+response = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
+bulk = oli.get_labels_bulk(response)
+print(bulk)
+```
+
+**Available filters:** addresses, chain_id, limit_per_address, include_all
+
+### Get Addresses Based on a Tag
+
+```python
+response = oli.search_addresses_by_tag(
+    tag_id="owner_project",
+    tag_value="growthepie"
+)
+print(response)
+```
+
+**Available filters:** tag_id, tag_value, chain_id, limit
+
+### Attester Leaderboard
+
+```python
+chain_id = "eip155:1"
+stats = oli.get_attester_analytics(chain_id)
+print(stats)
+```
+
+## OLI Label Trust
+
+```python
+# Set a new source node for trust propagation
+trust_table = oli.set_trust_node("0xYourAddress")
+print(oli.trust.trust_table)
+
+# Import your trust list from YAML file
+import yaml
+with open('example_trust_list.yml', 'r') as file:
+    trust_list = yaml.safe_load(file)
+    owner_name = trust_list.get('owner_name')
+    attesters = trust_list.get('attesters', [])
+    attestations = trust_list.get('attestations', [])
+
+# Check if the trust list is OLI compliant
+is_valid = oli.validate_trust_list(
+    owner_name, 
+    attesters, 
+    attestations
+)
+print("Your trust list is OLI compliant:", is_valid)
+
+# Add a private trust list to the trust graph
+oli.add_trust_list(
+    owner_name, 
+    attesters, 
+    attestations
+)
+
+# Submit your trust list to the global trust graph
+response = oli.submit_trust_list(
+    owner_name, 
+    attesters, 
+    attestations
+)
+print(response)
+```
+
+Once you set your trust node or submit your trust list, the transitive trust algorithm can assign a trust score to all labels. Use the following endpoints, which now assign a confidence score to each label. You can also set `min_confidence` to filter based on confidence thresholds.
+
+### Get Trusted Labels for an Address
+
+```python
+# All trusted labels for an address
+response = oli.get_trusted_labels(address = "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24")
+print(response)
+```
+
+**Available filters:** address, chain_id, limit, include_all, min_confidence
+
+### Bulk Get Trusted Labels for Addresses
+
+```python
+addresses = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
+response = oli.get_trusted_labels_bulk(addresses)
+print(response)
+```
+
+**Available filters:** addresses, chain_id, limit_per_address, include_all, min_confidence
+
+### Get Trusted Addresses Based on a Tag
+
+```python
+response = oli.search_trusted_addresses_by_tag(
+    tag_id = "owner_project",
+    tag_value = "growthepie"
+)
+print(response)
+```
+
+**Available filters:** tag_id, tag_value, chain_id, limit, min_confidence
+
+## OLI Label Pool Parquet Exports
+
+growthepie provides dataset exports as Parquet files for all attestations inside the OLI Label Pool, updated daily:
+
+```python
 oli.get_full_raw_export_parquet()
-
-# Download parquet export of decoded attestations
 oli.get_full_decoded_export_parquet()
 ```
 
+**Option:** Pass the filepath as a variable to store the export in a specific location.
 
-## Wallet Requirements
+## OLI Documentation
 
-The [OLI Label Pool](https://github.com/openlabelsinitiative/OLI/tree/main/2_label_pool) lives on Base as an [Ethereum Attestation schema](https://base.easscan.org/schema/view/0xb763e62d940bed6f527dd82418e146a904e62a297b8fa765c9b3e1f0bc6fdd68). 
-
-Make sure your wallet contains ETH on **Base Mainnet** to pay for onchain transaction (including offchain revocations). Offchain attestations are free.
-
-For testing purposes, you can use Base Sepolia Testnet by setting `is_production=False` when initializing the client.
-
-## Features
-
-- Submit onchain (single or batch) and offchain (single) labels into the OLI Label Pool
-- Revoke your own labels (single or batch)
-- Validate if your label is OLI compliant
-- Query attestations using GraphQL
-- Download full dataset exports in Parquet format
-
-## Documentation
-
-For more details, see the [OLI Documentation](https://github.com/openlabelsinitiative/OLI).
+* [Open Labels Initiative Docs](https://github.com/openlabelsinitiative/OLI)
+* [OLI Website](https://www.openlabelsinitiative.org/)
 
 ## License
 
-MIT
+MIT © Open Labels Initiative

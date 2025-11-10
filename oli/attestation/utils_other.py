@@ -32,6 +32,27 @@ class UtilsOther:
         encoded_data = encode(['string', 'string'], [chain_id, tags_json])
         return f"0x{encoded_data.hex()}"
     
+    def encode_list_data(self, owner: str, trusted: list, untrusted: list) -> str:
+        """
+        Encode trust list data in the OLI format.
+        
+        Args:
+            owner (str): Owner name of the trust list
+            trusted (dict): Dictionary of trusted entities
+            untrusted (dict): Dictionary of untrusted entities
+        Returns:
+            str: Hex-encoded ABI data
+        """
+        # Convert list to JSON strings if needed
+        if isinstance(trusted, list):
+            trusted = json.dumps(trusted)
+        if isinstance(untrusted, list):
+            untrusted = json.dumps(untrusted)
+        
+        # ABI encode the data
+        encoded_data = encode(['string', 'string', 'string'], [owner, trusted, untrusted])
+        return f"0x{encoded_data.hex()}"
+    
     def estimate_gas_limit(self, function, tx_params: dict, gas_limit: int) -> dict:
         """
         Estimate gas for a transaction.
@@ -45,7 +66,7 @@ class UtilsOther:
             tx_params (dict): Transaction parameters with estimated 'gas' field
         """
         try:
-            if gas_limit == 0:
+            if gas_limit == -1:
                 # Estimate gas with a buffer (e.g., 10% more than the estimate)
                 estimated_gas = function.estimate_gas(tx_params)
                 tx_params["gas"] = int(estimated_gas * 1.1)  # Add 10% buffer
