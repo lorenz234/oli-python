@@ -11,36 +11,6 @@ class UtilsData:
             oli_client: The OLI client instance
         """
         self.oli = oli_client
-
-    #### STILL NEEDED????
-    def turn_attestations_into_df(self, attestations: list) -> pd.DataFrame:
-        """
-        Turn a list of attestations into a pandas DataFrame.
-        
-        Args:
-            attestations (list): List of attestation dictionaries
-            
-        Returns:
-            pd.DataFrame: DataFrame of attestations
-        """
-        df = pd.DataFrame(data=attestations)
-        df = df[['attester', 'recipient', 'chain_id', 'tags_json', 'time', 'timeCreated']]
-
-        # Parse JSON strings into dictionaries
-        df['tags_json'] = df['tags_json'].apply(json.loads)
-
-        # Expand each tag_id:value pair into separate rows
-        tags_list = []
-        for idx, row in df.iterrows():
-            for tag_id, value in row['tags_json'].items():
-                tags_list.append({
-                    **row.drop('tags_json').to_dict(),
-                    'tag_id': tag_id,
-                    'value': value
-                })
-
-        df = pd.DataFrame(tags_list)
-        return df
     
     # get confidence scores
     def get_confidence(self, attester: str, tag_id: str, chain_id: str) -> float:

@@ -283,14 +283,14 @@ class UtilsValidator:
 
         for item in attestations:
             # Validate attestation
-            if 'id' in item:
+            if 'uid' in item:
                 # check attestation UID
-                self.validate_ref_uid(item['id'])
+                self.validate_ref_uid(item['uid'])
                 # check attestation item
                 self.validate_attestation_item(item)
             else:
                 print(item)
-                raise ValueError(f"Each attestation entry must have an 'id' key. See for example: {self.url_3_label_trust}")
+                raise ValueError(f"Each attestation entry must have an 'uid' key. See for example: {self.url_3_label_trust}")
 
         return True
 
@@ -346,7 +346,7 @@ class UtilsValidator:
         """
         if 'confidence' not in item:
             print(item)
-            raise ValueError(f"Each attestation entry with an 'id' key must also have a 'confidence' key. See for example: {self.url_3_label_trust}")
+            raise ValueError(f"Each attestation entry with a 'uid' key must also have a 'confidence' key. See for example: {self.url_3_label_trust}")
         elif item['confidence'] < 0 or item['confidence'] > 1:
             print(item)
             raise ValueError(f"Confidence must be between 0 and 1.")
