@@ -105,9 +105,9 @@ print(response)
 ### Bulk Get Labels for Addresses
 
 ```python
-response = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
-bulk = oli.get_labels_bulk(response)
-print(bulk)
+addresses = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
+response = oli.get_labels_bulk(addresses)
+print(response)
 ```
 
 **Available filters:** addresses, chain_id, limit_per_address, include_all
