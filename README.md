@@ -27,7 +27,7 @@ oli = OLI(
 * Create a `.env` file to store your private variables
 * Load an EOA wallet by setting the `private_key` variable
 * The EOA wallet is used to track your reputation within OLI
-* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](https://www.openlabelsinitiative.org/)**
+* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](http://openlabelsinitiative.org/developer)**
 
 **Additional Options:**
 
@@ -86,8 +86,8 @@ oli.revoke_bulk_by_uids(uids)
 ### Get Raw Attestations
 
 ```python
-result = oli.get_attestations()
-print(result)
+response = oli.get_attestations()
+print(response)
 ```
 
 **Available filters:** uid, attester, recipient, schema_info, since, order, limit
@@ -96,8 +96,8 @@ print(result)
 
 ```python
 # All labels for an address
-labels = oli.get_labels(address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2")
-print(labels)
+response = oli.get_labels(address = "0x9438b8B447179740cD97869997a2FCc9b4AA63a2")
+print(response)
 ```
 
 **Available filters:** address, chain_id, limit, include_all
@@ -105,8 +105,9 @@ print(labels)
 ### Bulk Get Labels for Addresses
 
 ```python
-addresses = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
-bulk = oli.get_labels_bulk(addresses)
+response = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
+bulk = oli.get_labels_bulk(response)
+print(bulk)
 ```
 
 **Available filters:** addresses, chain_id, limit_per_address, include_all
@@ -114,10 +115,11 @@ bulk = oli.get_labels_bulk(addresses)
 ### Get Addresses Based on a Tag
 
 ```python
-result = oli.search_addresses_by_tag(
+response = oli.search_addresses_by_tag(
     tag_id="owner_project",
     tag_value="growthepie"
 )
+print(response)
 ```
 
 **Available filters:** tag_id, tag_value, chain_id, limit
@@ -151,6 +153,7 @@ is_valid = oli.validate_trust_list(
     attesters, 
     attestations
 )
+print("Your trust list is OLI compliant:", is_valid)
 
 # Add a private trust list to the trust graph
 oli.add_trust_list(
@@ -160,11 +163,12 @@ oli.add_trust_list(
 )
 
 # Submit your trust list to the global trust graph
-oli.submit_trust_list(
+response = oli.submit_trust_list(
     owner_name, 
     attesters, 
     attestations
 )
+print(response)
 ```
 
 Once you set your trust node or submit your trust list, the transitive trust algorithm can assign a trust score to all labels. Use the following endpoints, which now assign a confidence score to each label. You can also set `min_confidence` to filter based on confidence thresholds.
@@ -173,8 +177,8 @@ Once you set your trust node or submit your trust list, the transitive trust alg
 
 ```python
 # All trusted labels for an address
-labels = oli.get_trusted_labels(address = "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24")
-print(labels)
+response = oli.get_trusted_labels(address = "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24")
+print(response)
 ```
 
 **Available filters:** address, chain_id, limit, include_all, min_confidence
@@ -183,7 +187,8 @@ print(labels)
 
 ```python
 addresses = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
-bulk = oli.get_trusted_labels_bulk(addresses)
+response = oli.get_trusted_labels_bulk(addresses)
+print(response)
 ```
 
 **Available filters:** addresses, chain_id, limit_per_address, include_all, min_confidence
@@ -191,10 +196,11 @@ bulk = oli.get_trusted_labels_bulk(addresses)
 ### Get Trusted Addresses Based on a Tag
 
 ```python
-result = oli.search_trusted_addresses_by_tag(
+response = oli.search_trusted_addresses_by_tag(
     tag_id = "owner_project",
     tag_value = "growthepie"
 )
+print(response)
 ```
 
 **Available filters:** tag_id, tag_value, chain_id, limit, min_confidence

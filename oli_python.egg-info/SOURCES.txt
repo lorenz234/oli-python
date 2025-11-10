@@ -8,8 +8,9 @@ oli/attestation/onchain.py
 oli/attestation/utils_other.py
 oli/attestation/utils_validator.py
 oli/data/__init__.py
-oli/data/fetcher.py
-oli/data/graphql.py
+oli/data/api.py
+oli/data/trust.py
+oli/data/utils.py
 oli_python.egg-info/PKG-INFO
 oli_python.egg-info/SOURCES.txt
 oli_python.egg-info/dependency_links.txt

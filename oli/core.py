@@ -327,18 +327,18 @@ class OLI:
         return self.api.get_labels_bulk(addresses, chain_id, limit_per_address, include_all)
     
     def get_trusted_labels_bulk(self, addresses: list, chain_id: str = None, limit_per_address: int = 1000, include_all: bool = False, min_confidence: float = -1) -> dict:
-        r = self.api.get_labels_bulk(addresses, chain_id, limit_per_address, include_all)
-        for i, address in enumerate(r['results']):
+        response = self.api.get_labels_bulk(addresses, chain_id, limit_per_address, include_all)
+        for i, address in enumerate(response['results']):
             filtered_labels = []
             labels = address['labels']
             for label in labels:
                 label['confidence'] = self.utils_data.get_confidence(label['attester'], label['tag_id'], label['chain_id'])
                 if label['confidence'] >= min_confidence or min_confidence == -1:
                     filtered_labels.append(label)
-            r['results'][i] = {'address': address['address'], 'labels': filtered_labels}
-            r['results'][i]['count'] = len(labels)
-            r['results'][i]['count_trusted'] = len(filtered_labels)
-        return r['results']
+            response['results'][i] = {'address': address['address'], 'labels': filtered_labels}
+            response['results'][i]['count'] = len(labels)
+            response['results'][i]['count_trusted'] = len(filtered_labels)
+        return response
 
     def search_addresses_by_tag(self, tag_id: str, tag_value: str, chain_id: str = None, limit: int = 1000) -> dict:
         return self.api.search_addresses_by_tag(tag_id, tag_value, chain_id, limit)
