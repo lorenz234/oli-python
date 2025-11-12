@@ -1,6 +1,3 @@
-import json
-import pandas as pd
-import networkx as nx
 
 class UtilsData:
     def __init__(self, oli_client):
