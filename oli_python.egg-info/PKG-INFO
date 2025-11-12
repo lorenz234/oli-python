@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: oli-python
-Version: 2.0.0
+Version: 2.0.1
 Summary: Python SDK for interacting with the Open Labels Initiative; A standard, registry and trust layer for EVM address labels.
 Home-page: https://github.com/openlabelsinitiative/oli-python
 Author: Lorenz Lehmann
@@ -54,7 +54,7 @@ oli = OLI(
 * Create a `.env` file to store your private variables
 * Load an EOA wallet by setting the `private_key` variable
 * The EOA wallet is used to track your reputation within OLI
-* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](http://openlabelsinitiative.org/developer)**
+* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](https://www.openlabelsinitiative.org/developer)**
 
 **Additional Options:**
 
@@ -132,9 +132,9 @@ print(response)
 ### Bulk Get Labels for Addresses
 
 ```python
-response = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
-bulk = oli.get_labels_bulk(response)
-print(bulk)
+addresses = ["0x9438b8B447179740cD97869997a2FCc9b4AA63a2", "0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24"]
+response = oli.get_labels_bulk(addresses)
+print(response)
 ```
 
 **Available filters:** addresses, chain_id, limit_per_address, include_all
