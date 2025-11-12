@@ -13,12 +13,16 @@ class UtilsTrust:
         # init trust variables
         try:
             self.raw_trust_lists = self.get_trust_lists_from_api()
-            self.TrustGraph = self.build_trust_graph(self.raw_trust_lists)
-            self.trust_table = self.compute_trust_table(self.TrustGraph, source_node=self.oli.source_address)
         except:
             self.raw_trust_lists = {}
-            self.trust_table = {}
+        try:
+            self.TrustGraph = self.build_trust_graph(self.raw_trust_lists)
+        except:
             self.TrustGraph = nx.MultiDiGraph()
+        try:
+            self.trust_table = self.compute_trust_table(self.TrustGraph, source_node=self.oli.source_address)
+        except:
+            self.trust_table = {}
 
     # computes the trust table for a given source node
     def compute_trust_table(self, TrustGraph: nx.MultiDiGraph, source_node: str=None) -> dict:
