@@ -27,7 +27,7 @@ oli = OLI(
 * Create a `.env` file to store your private variables
 * Load an EOA wallet by setting the `private_key` variable
 * The EOA wallet is used to track your reputation within OLI
-* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](http://openlabelsinitiative.org/developer)**
+* To access all advanced API endpoints, pass an `api_key` variable. You can get your free API key from **[here](https://www.openlabelsinitiative.org/developer)**
 
 **Additional Options:**
 
