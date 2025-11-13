@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="oli-python",
-    version="2.0.2",
+    version="2.0.3",
     author="Lorenz Lehmann",
     author_email="lorenz@growthepie.com",
     description="Python SDK for interacting with the Open Labels Initiative; A standard, registry and trust layer for EVM address labels.",
@@ -24,6 +24,7 @@ setup(
     python_requires='>=3.9',
     install_requires=[
         'web3>=6.0.0',
-        'PyYAML>=6.0.0'
+        'PyYAML>=6.0.0',
+        'networkx>=3.4.2'
     ]
 )

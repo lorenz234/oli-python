@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: oli-python
-Version: 2.0.2
+Version: 2.0.3
 Summary: Python SDK for interacting with the Open Labels Initiative; A standard, registry and trust layer for EVM address labels.
 Home-page: https://github.com/openlabelsinitiative/oli-python
 Author: Lorenz Lehmann
@@ -15,6 +15,7 @@ Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 Requires-Dist: web3>=6.0.0
 Requires-Dist: PyYAML>=6.0.0
+Requires-Dist: networkx>=3.4.2
 Dynamic: author
 Dynamic: author-email
 Dynamic: classifier
