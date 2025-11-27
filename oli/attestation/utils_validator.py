@@ -215,7 +215,7 @@ class UtilsValidator:
                     if len(self.oli.tag_value_sets[tag_id]) < 100:
                         print(f"Please use one of the following values for {tag_id}: {self.oli.tag_value_sets[tag_id]}")
                     else:
-                        print(f"Please use a valid value from the predefined value_set for {tag_id}: {self.oli.tag_definitions[tag_id]['value_set']}")
+                        print(f"Please use a valid value from the predefined value_set for {tag_id}: oli.tag_value_sets['{tag_id}']")
                 # list of values
                 elif tags[tag_id] not in self.oli.tag_value_sets[tag_id] and isinstance(tags[tag_id], list):
                     for i in tags[tag_id]:
@@ -224,7 +224,7 @@ class UtilsValidator:
                             if len(self.oli.tag_value_sets[tag_id]) < 100:
                                 print(f"Please use a list of values from the predefined value_set for {tag_id}: {self.oli.tag_value_sets[tag_id]}")
                             else:
-                                print(f"Please use a list of values from the predefined value_set for {tag_id}: {self.oli.tag_definitions[tag_id]['value_set']}")
+                                print(f"Please use a list of values from the predefined value_set for {tag_id}: oli.tag_value_sets['{tag_id}']")
 
     def validate_ref_uid(self, ref_uid: str) -> bool:
         """
