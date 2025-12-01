@@ -4,6 +4,8 @@
 
 This SDK lets you read, write, validate, and revoke address labels within the **OLI Label Pool** and compute confidence scores based on attesters' relationships within the **OLI Label Trust**.
 
+[Video Walkthrough](https://x.com/open_labels/status/1994353238699651328)
+
 ## Installation
 
 ```bash
