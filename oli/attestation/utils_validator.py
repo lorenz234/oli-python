@@ -27,6 +27,7 @@ class UtilsValidator:
         Fix basic formatting in the tags dictionary. This includes:
         - Ensuring all tag_ids are lowercase
         - Booling values are converted from strings to booleans
+        - Integer values are converted from strings to integers
         - Removing leading/trailing whitespace from string values
         - Checksum address (string(42)) tags
         
@@ -49,6 +50,21 @@ class UtilsValidator:
                     tags[k] = False
             elif isinstance(v, list):
                 tags[k] = [i.strip() if isinstance(i, str) else i for i in v]
+
+        # turn integers of type strings to integers
+        if self.oli.tag_definitions is not None:
+            integer_keys = [
+                key
+                for key, value in self.oli.tag_definitions.items()
+                if value.get("schema", {}).get("type") == "integer"
+            ]
+            for k, v in tags.items():
+                if k in integer_keys and isinstance(v, str):
+                    if v.isdigit():
+                        try:
+                            tags[k] = int(v)
+                        except ValueError:
+                            pass
 
         # Checksum address tags
         for k, v in tags.items():
