@@ -26,9 +26,11 @@ class UtilsValidator:
         """
         Fix basic formatting in the tags dictionary. This includes:
         - Ensuring all tag_ids are lowercase
-        - Booling values are converted from strings to booleans
         - Removing leading/trailing whitespace from string values
-        - Checksum address (string(42)) tags
+        - Converting boolean values from strings/integers to booleans
+          (accepts: 'true'/'t'/'1'/1 for True, 'false'/'f'/'0'/0 for False, case-insensitive)
+        - Converting integer values from strings to integers
+        - Checksumming address (string(42)) tags
         
         Args:
             tags (dict): Dictionary of tags
@@ -39,16 +41,48 @@ class UtilsValidator:
         # Convert tag_ids to lowercase
         tags = {k.lower(): v for k, v in tags.items()}
 
-        # Strip whitespaces, then turn boolean values from strings to booleans
+        # Strip whitespaces from strings
         for k, v in tags.items():
             if isinstance(v, str):
                 tags[k] = v.strip()
-                if tags[k] == 'true':
-                    tags[k] = True
-                elif tags[k] == 'false':
-                    tags[k] = False
             elif isinstance(v, list):
                 tags[k] = [i.strip() if isinstance(i, str) else i for i in v]
+
+        # Turn boolean strings to booleans based on schema
+        if self.oli.tag_definitions is not None:
+            boolean_keys = [
+                key
+                for key, value in self.oli.tag_definitions.items()
+                if value.get("schema", {}).get("type") == "boolean"
+            ]
+            for k, v in tags.items():
+                if k in boolean_keys:
+                    if isinstance(v, str):
+                        v_lower = v.lower()
+                        if v_lower in ('true', 't', '1'):
+                            tags[k] = True
+                        elif v_lower in ('false', 'f', '0'):
+                            tags[k] = False
+                    elif isinstance(v, int):
+                        if v == 1:
+                            tags[k] = True
+                        elif v == 0:
+                            tags[k] = False
+
+        # Turn integer strings to integers based on schema
+        if self.oli.tag_definitions is not None:
+            integer_keys = [
+                key
+                for key, value in self.oli.tag_definitions.items()
+                if value.get("schema", {}).get("type") == "integer"
+            ]
+            for k, v in tags.items():
+                if k in integer_keys and isinstance(v, str):
+                    if v.isdigit():
+                        try:
+                            tags[k] = int(v)
+                        except ValueError:
+                            pass
 
         # Checksum address tags
         for k, v in tags.items():
