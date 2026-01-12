@@ -31,7 +31,7 @@ class OnchainAttestations:
             tags = self.oli.validator.fix_simple_tags_formatting(tags)
 
             # Check all necessary input parameters
-            self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, recipient, auto_fix=False)
+            self.oli.validator.validate_label_correctness(address, chain_id, tags, ref_uid, auto_fix=False)
 
         else:
             print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")

@@ -187,6 +187,9 @@ class UtilsValidator:
         if len(address) > 66 or len(address) == 0:
             print(f"Unexpected address length ({len(address)}): '{address}'")
             raise ValueError(f"Address to be labelled exceeds maximum length of 66 characters or is empty. See this guide on CAIP-10 address limitations: {self.url_caip10_format}")
+        if ":" in address:
+            print(f"Address to be labelled must not contain ':' character: '{address}'")
+            raise ValueError(f"Address to be labelled must not contain ':' character. See this guide on CAIP-10 address limitations: {self.url_caip10_format}")
         return True
 
     def validate_tags(self, tags: dict, auto_fix: bool=False) -> bool:
