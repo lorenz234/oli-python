@@ -13,12 +13,12 @@ class UtilsOther:
         """
         self.oli = oli_client
     
-    def encode_label_data(self, chain_id: str, tags_json: dict) -> str:
+    def encode_label_data(self, caip10: str, tags_json: dict) -> str:
         """
         Encode label data in the OLI format.
         
         Args:
-            chain_id (str): Chain ID in CAIP-2 format of the label (e.g. 'eip155:8453')
+            caip10 (str): address and chain_id in caip10 format (e.g. 'eip155:8453:0x3Ae5F83668B75328446c649B6ab342aC46D73B3c')
             tags_json (dict): Dictionary of tag data following the OLI format
             
         Returns:
@@ -27,9 +27,15 @@ class UtilsOther:
         # Convert dict to JSON string if needed
         if isinstance(tags_json, dict):
             tags_json = json.dumps(tags_json)
+
+        # Convert address to checksum if possible
+        try:
+            caip10 = caip10[:caip10.rfind(":")+1] + self.oli.w3.to_checksum_address(caip10.split(":")[-1])
+        except:
+            pass
             
         # ABI encode the data
-        encoded_data = encode(['string', 'string'], [chain_id, tags_json])
+        encoded_data = encode(['string', 'string'], [caip10, tags_json])
         return f"0x{encoded_data.hex()}"
     
     def encode_list_data(self, owner: str, trusted: list, untrusted: list) -> str:

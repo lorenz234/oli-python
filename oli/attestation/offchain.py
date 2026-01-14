@@ -41,12 +41,15 @@ class OffchainAttestations:
         else:
             print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
 
+        # Merge chain_id (CAIP2) & address to CAIP10 format
+        caip10 = f"{chain_id}:{address}"
+
         # Encode the label data
-        data = self.oli.utils_other.encode_label_data(chain_id, tags)
+        data = self.oli.utils_other.encode_label_data(caip10, tags)
         
         # Build the attestation
         attestation = self.build_offchain_attestation(
-            recipient=address, 
+            recipient="0x0000000000000000000000000000000000000001",  # use 0x...1 to track python tooling was used
             schema=self.oli.oli_label_pool_schema, 
             data=data, 
             ref_uid=ref_uid
@@ -108,12 +111,15 @@ class OffchainAttestations:
                 else:
                     print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
         
+                # Merge chain_id (CAIP2) & address to CAIP10 format
+                caip10 = f"{chain_id}:{address}"
+
                 # Encode the label data
-                data = self.oli.utils_other.encode_label_data(chain_id, tags)
-        
+                data = self.oli.utils_other.encode_label_data(caip10, tags)
+
                 # Build the attestation
                 attestation = self.build_offchain_attestation(
-                    recipient=address, 
+                    recipient="0x0000000000000000000000000000000000000001", # use 0x...1 to track python tooling was used
                     schema=self.oli.oli_label_pool_schema, 
                     data=data, 
                     ref_uid=ref_uid
@@ -164,10 +170,9 @@ class OffchainAttestations:
         data = self.oli.utils_other.encode_list_data(owner_name, attesters, attestations)
 
         # Build the attestation
-        recipient = "0x0000000000000000000000000000000000000000"
         ref_uid = "0x0000000000000000000000000000000000000000000000000000000000000000"
         attestation = self.build_offchain_attestation(
-            recipient=recipient, 
+            recipient="0x0000000000000000000000000000000000000001", # use 0x...1 to track python tooling was used
             schema=self.oli.oli_label_trust_schema, 
             data=data, 
             ref_uid=ref_uid

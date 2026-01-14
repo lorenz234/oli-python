@@ -82,7 +82,7 @@ class OLI:
                 self.source_address = None # for Label Trust
         
         # Label Pool Schema for OLI Label Pool
-        self.oli_label_pool_schema = '0xb763e62d940bed6f527dd82418e146a904e62a297b8fa765c9b3e1f0bc6fdd68'
+        self.oli_label_pool_schema = '0xcff83309b59685fdae9dad7c63d969150676d51d8eeda66799d1c4898b84556a' # v2.0.0 of EAS schema
         
         # Label Trust Schema for OLI Label Trust
         self.oli_label_trust_schema = '0x6d780a85bfad501090cd82868a0c773c09beafda609d54888a65c106898c363d'

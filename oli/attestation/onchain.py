@@ -18,7 +18,7 @@ class OnchainAttestations:
             chain_id (str): Chain ID in CAIP-2 format where the address/contract resides
             tags (dict): OLI compliant tags as a dict  information (name, version, etc.)
             ref_uid (str): Reference UID
-            gas_limit (int): Gas limit for the transaction. If set to -1, the function will estimate the gas limit.
+            gas_limit (int): Gas limit for the transaction. If set to -1, the function will estimate the gas limit
             
         Returns:
             str: Transaction hash
@@ -36,14 +36,17 @@ class OnchainAttestations:
         else:
             print("Warning: OLI tag definitions not loaded, skipping tag formatting and validation. Please upgrade to the latest OLI version and ensure internet connectivity at initialization.")
 
+        # Prepare CAIP10 format for the address
+        caip10 = f"{chain_id}:{address}"
+
         # Encode the label data
-        data = self.oli.utils_other.encode_label_data(chain_id, tags)
+        data = self.oli.utils_other.encode_label_data(caip10, tags)
         
         # Create the attestation
         function = self.oli.eas.functions.attest({
             'schema': self.oli.w3.to_bytes(hexstr=self.oli.oli_label_pool_schema),
             'data': {
-                'recipient': self.oli.w3.to_checksum_address(address),
+                'recipient': "0x0000000000000000000000000000000000000001",  # use 0x...1 to track python tooling was used
                 'expirationTime': 0,
                 'revocable': True,
                 'refUID': self.oli.w3.to_bytes(hexstr=ref_uid),
@@ -128,10 +131,13 @@ class OnchainAttestations:
             else:
                 self.oli.validator.validate_ref_uid(label['ref_uid'])
 
+            # Merge chain_id (CAIP2) & address to CAIP10 format
+            caip10 = f"{label['chain_id']}:{label['address']}"
+
             # ABI encode data for each attestation
-            data = self.oli.utils_other.encode_label_data(label['chain_id'], label['tags'])
+            data = self.oli.utils_other.encode_label_data(caip10, label['tags'])
             full_data.append({
-                'recipient': self.oli.w3.to_checksum_address(label['address']),
+                'recipient': "0x0000000000000000000000000000000000000001", # use 0x...1 to track python tooling was used
                 'expirationTime': 0,
                 'revocable': True,
                 'refUID': self.oli.w3.to_bytes(hexstr=label['ref_uid']),
@@ -206,7 +212,7 @@ class OnchainAttestations:
         function = self.oli.eas.functions.attest({
             'schema': self.oli.w3.to_bytes(hexstr=self.oli.oli_label_trust_schema),
             'data': {
-                'recipient': "0x0000000000000000000000000000000000000000",  # Trust lists are not tied to a specific address
+                'recipient': "0x0000000000000000000000000000000000000001",  # Trust lists are not tied to a specific address, use 0x...1 to track python tooling was used
                 'expirationTime': 0, # never expires
                 'revocable': True, # can be revoked
                 'refUID': "0x0000000000000000000000000000000000000000000000000000000000000000", # no ref UID for trust lists

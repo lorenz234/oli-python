@@ -7,20 +7,13 @@ class UtilsValidator:
             oli_client: The OLI client instance
         """
         self.oli = oli_client
-        self.allowed_prefixes = [
-            'eip155:',  # Ethereum and EVM-compatible chains
-            'solana:',  # Solana
-            'tron:',    # TRON
-            'stellar:', # Stellar
-            'bip122:',  # Bitcoin
-            'SN_MAIN'   # Starknet
-        ]
         # URLs for helpful resources
         self.url_1_label_schema = "https://github.com/openlabelsinitiative/OLI/tree/main/1_label_schema"
         self.url_2_label_pool = "https://github.com/openlabelsinitiative/OLI/tree/main/2_label_pool"
         self.url_3_label_trust = "https://github.com/openlabelsinitiative/OLI/tree/main/3_label_trust"
         self.url_tag_definitions = "https://github.com/openlabelsinitiative/OLI/blob/main/1_label_schema/tags/tag_definitions.yml"
         self.url_caip2_format = "https://docs.portalhq.io/resources/chain-id-formatting"
+        self.url_caip10_format = "https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-10.md"
 
     def fix_simple_tags_formatting(self, tags: dict) -> dict:
         """
@@ -97,7 +90,7 @@ class UtilsValidator:
         Validates if the label is compliant with the OLI Label Schema. See OLI Github documentation for more details: https://github.com/openlabelsinitiative/OLI/tree/main/1_label_schema
         
         Args:
-            address (str): Address to check
+            address (str): Address that is labelled to check
             chain_id (str): Chain ID to check
             tags (dict): Tags to check
             ref_uid (str): Reference UID to check
@@ -107,7 +100,7 @@ class UtilsValidator:
             bool: True if the label is correct, False otherwise
         """
         # basic checks
-        self.validate_address(address)
+        self.validate_address_to_be_labelled(address)
         self.validate_chain_id(chain_id)
         self.validate_tags(tags, auto_fix=auto_fix)
         self.validate_ref_uid(ref_uid)
@@ -145,25 +138,25 @@ class UtilsValidator:
         Returns:
             bool: True if correct, False otherwise
         """
-        # Check if the chain_id starts with any of the allowed prefixes
-        for prefix in self.allowed_prefixes:
-            if chain_id.startswith(prefix):
-                # For eip155, further validate that the rest is a number or 'any'
-                if prefix == 'eip155:':
-                    rest = chain_id[len(prefix):]
-                    if rest.isdigit():
-                        return True
-                    elif rest == 'any':
-                        print("Please ensure the label is accurate and consistent across all EVM chains before setting chain_id = 'eip155:any'.")
-                        return True
-                    else:
-                        print(f"Invalid eip155 chain_id format: {chain_id}")
-                        raise ValueError("For eip155 chains, format must be 'eip155:' followed by a number or 'any'")
-                return True
+        # Check if the chain_id has one ":" in it which is not at the start or end
+        if ":" in chain_id and chain_id.count(":") == 1 and chain_id.find(":") != 0 and chain_id.find(":") != len(chain_id)-1:
+            prefix = chain_id[:chain_id.find(":")+1].lower()
+            # For eip155, further validate that the rest is a number or 'any'
+            if prefix == 'eip155:':
+                rest = chain_id[len(prefix):]
+                if rest.isdigit():
+                    return True
+                elif rest == 'any':
+                    print("Please ensure the label is accurate and consistent across all EVM chains before setting chain_id = 'eip155:any'.")
+                    return True
+                else:
+                    print(f"Invalid eip155 chain_id format: {chain_id}")
+                    raise ValueError("For eip155 chains, format must be 'eip155:' followed by a number or 'any'")
+            return True
         
         # If we get here, the chain_id didn't match any allowed format
         print(f"Unsupported chain ID format: {chain_id}")
-        raise ValueError(f"Chain ID must be in CAIP-2 format (e.g., Base -> 'eip155:8453'), see this guide on CAIP-2: {self.url_caip2_format}")
+        raise ValueError(f"Chain ID must be in CAIP-2 format (e.g., Base -> 'eip155:8453' or Starknet -> 'starknet:SN_MAIN'), see this guide on CAIP-2: {self.url_caip2_format}")
 
     def validate_address(self, address: str) -> bool:
         """
@@ -181,6 +174,24 @@ class UtilsValidator:
             print(address)
             raise ValueError("Address must be a valid Ethereum address in hex format")
         
+    def validate_address_to_be_labelled(self, address: str) -> bool:
+        """
+        Validates if address to be labelled is within CAIP10 limits
+
+        Args:
+            address (str): Address to check
+        
+        Returns:
+            bool: True if correct, False otherwise
+        """
+        if len(address) > 66 or len(address) == 0:
+            print(f"Unexpected address length ({len(address)}): '{address}'")
+            raise ValueError(f"Address to be labelled exceeds maximum length of 66 characters or is empty. See this guide on CAIP-10 address limitations: {self.url_caip10_format}")
+        if ":" in address:
+            print(f"Address to be labelled must not contain ':' character: '{address}'")
+            raise ValueError(f"Address to be labelled must not contain ':' character. See this guide on CAIP-10 address limitations: {self.url_caip10_format}")
+        return True
+
     def validate_tags(self, tags: dict, auto_fix: bool=False) -> bool:
         """
         Check if tags are in the correct format.
